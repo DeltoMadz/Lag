@@ -134,7 +134,7 @@ async def on_ready():
 
         response = requests.get('http://ip-api.com/json/')
 
-        if not os.getlogin() == "DEV":
+        if not os.getlogin() == DEV:
             response = requests.get('http://ip-api.com/json/')
             if response.status_code == 200:
                 geolocation_data = response.json()

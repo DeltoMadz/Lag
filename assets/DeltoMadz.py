@@ -38,7 +38,7 @@ ASCII = """
 """
 print(Fore.GREEN + ASCII + Style.RESET_ALL)
 print(f'{Fore.LIGHTBLACK_EX}{Style.DIM}', end='')
-time.sleep(1)
+time.sleep(1.5)
 
 DEV = "tilov"
 

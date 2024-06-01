@@ -1984,7 +1984,6 @@ async def winr(ctx, *, command):
     except Exception as e:
         await ctx.send(f'Fehler beim Ausführen des Befehls: {e}')
 
-
 @bot.command(help="Execute a command in the current directory")
 async def exec(ctx, *, command):
     global current_directory

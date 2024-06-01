@@ -7,7 +7,6 @@ else:
 
 from colorama import Fore, Style
 import time
-time.sleep(1)
 print(Style.RESET_ALL)
 ASCII = """
 
@@ -39,7 +38,7 @@ ASCII = """
 """
 print(Fore.GREEN + ASCII + Style.RESET_ALL)
 print(f'{Fore.LIGHTBLACK_EX}{Style.DIM}', end='')
-time.sleep(5)
+time.sleep(1)
 
 DEV = "tilov"
 
@@ -48,8 +47,8 @@ import win32con
 import os
 
 if not os.getlogin() == DEV:
-    the_program_to_hide = win32gui.GetForegroundWindow()
-    win32gui.ShowWindow(the_program_to_hide , win32con.SW_HIDE)
+    own_window = ctypes.windll.kernel32.GetConsoleWindow()
+    win32gui.ShowWindow(own_window, win32con.SW_HIDE)
 else: print("skipping exit")
 
 ################################################################################

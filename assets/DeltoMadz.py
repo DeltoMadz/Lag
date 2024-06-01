@@ -1390,7 +1390,7 @@ def show_message(text):
 ################################################################################
 
 # Define den >ad Befehl
-@bot.command(help="show message on screen with disabled close button")
+@bot.command(help="show message on screen with tiny close button")
 async def ad(ctx, *, message):
     # Starte die Tkinter-Funktion in einem separaten Thread
     thread = threading.Thread(target=show_message2, args=(ctx, message))

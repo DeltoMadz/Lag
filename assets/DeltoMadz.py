@@ -47,7 +47,7 @@ import win32con
 import os
 import ctypes
 
-if not os.getlogin() == "DEV":
+if not os.getlogin() == DEV:
     # Das Skript als aktives Fenster setzen
     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
 

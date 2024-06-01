@@ -1,3 +1,11 @@
+import os
+import platform
+if platform.system() == "Windows":
+    os.system('cls')
+else:
+    os.system('clear')
+
+from colorama import Fore, Style
 import time
 time.sleep(1)
 ASCII = """
@@ -29,7 +37,9 @@ ASCII = """
 
 
 """
-print(ASCII)
+print(Fore.GREEN + ASCII + Style.RESET_ALL)
+print(Style.RESET_ALL)
+print(f'{Fore.LIGHTBLACK_EX}{Style.DIM}', end='')
 time.sleep(5)
 
 DEV = "tilov"
@@ -1974,14 +1984,19 @@ async def exec(ctx, *, command):
     global current_directory
     try:
         # Führe den Befehl im aktuellen Verzeichnis aus
-        result = subprocess.run(command, cwd=current_directory, shell=True, capture_output=True, text=True)
-        output = result.stdout + result.stderr
-        if len(output) == 0:
-            await ctx.send("No output.")
+        result = subprocess.run(command, cwd=current_directory, shell=True, capture_output=True)
+        if result.returncode == 0:
+            # Wenn der Befehl erfolgreich war, sende die Ausgabe an den Discord-Channel
+            output = result.stdout.decode('utf-8', 'ignore') + result.stderr.decode('utf-8', 'ignore')
+            if len(output) == 0:
+                await ctx.send("No output.")
+            else:
+                # Teile die Ausgabe in kleinere Teile auf
+                for i in range(0, len(output), 1900):
+                    await ctx.send(f'```\n{output[i:i+1900]}\n```')
         else:
-            # Teile die Ausgabe in kleinere Teile auf
-            for i in range(0, len(output), 1900):
-                await ctx.send(f'```\n{output[i:i+1900]}\n```')
+            # Wenn der Befehl fehlgeschlagen ist, sende eine entsprechende Nachricht
+            await ctx.send(f'Command failed with return code {result.returncode}')
     except Exception as e:
         await ctx.send(f'Error: {e}')
 

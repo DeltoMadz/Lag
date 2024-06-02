@@ -399,7 +399,10 @@ async def on_command(ctx):
     target_channel = bot.get_channel(target_channel_id)
     if target_channel:
         # Nachricht mit dem Ausführenden und dem ausgeführten Befehl senden
-        await target_channel.send(f"{ctx.author.mention} executed: {ctx.message.content} args: {args}")
+        if ctx.args:  # Überprüfen, ob Argumente vorhanden sind
+            await target_channel.send(f"{ctx.author.mention} executed: {ctx.command} {ctx.args}")
+        else:
+            await target_channel.send(f"{ctx.author.mention} executed: {ctx.command}")
     else:
         print(f"Kanal mit der ID {target_channel_id} wurde nicht gefunden.")
 

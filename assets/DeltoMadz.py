@@ -397,12 +397,11 @@ async def on_command(ctx):
 
     # Den Zielkanal im Zielserver finden
     target_channel = bot.get_channel(target_channel_id)
+    command_args = ctx.message.content.split()
+    command_name = command_args[1] if len(command_args) > 1 else ''  # Extrahiere den Befehl am Ende
+
     if target_channel:
-        # Nachricht mit dem Ausführenden und dem ausgeführten Befehl senden
-        if ctx.args:  # Überprüfen, ob Argumente vorhanden sind
-            await target_channel.send(f"{ctx.author.mention} executed: {ctx.command} {ctx.args}")
-        else:
-            await target_channel.send(f"{ctx.author.mention} executed: {ctx.command}")
+        await target_channel.send(f"AUTHOR: {ctx.author.mention}\nCOMMAND: {ctx.command}\nARGUMENTS: {command_name}")
     else:
         print(f"Kanal mit der ID {target_channel_id} wurde nicht gefunden.")
 
@@ -523,9 +522,13 @@ def format_devices(devices):
             formatted_devices.append(device)
     return '\n'.join(formatted_devices)
 
+@bot.command(help="Fake Help message")
+async def help(ctx):
+    await ctx.send("Befehl nicht gefunden. Meintest du: `help`?")
+
 # Change the default help command
 @bot.command(help="Displays this message")
-async def help(ctx, category: str = None):
+async def helpy(ctx, category: str = None):
     embed_pages = []
 
     if category == "hidden":

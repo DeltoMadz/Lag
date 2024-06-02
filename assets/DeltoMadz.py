@@ -2009,22 +2009,22 @@ async def exec(ctx, *, command):
 
 watching_enabled = False
 key_mapping = {}
+last_key_state = {}
 
 def watch_keyboard():
-    key_states = {key: False for key in key_mapping}
     while True:
         if watching_enabled:
-            for key in key_mapping:
-                if keyboard.is_pressed(key) and not key_states[key]:
+            for key in list(key_mapping.keys()):  # Erstelle eine Kopie der Schlüssel, um Änderungen zu vermeiden
+                if keyboard.is_pressed(key) and not last_key_state.get(key, False):
+                    last_key_state[key] = True
                     actions = key_mapping[key]
                     for action in actions:
                         time.sleep(0.0025)
                         keyboard.send("\b")
                         keyboard.send(action)
-                        time.sleep(0.001)
-                    key_states[key] = True
+                    break  # Beende die Schleife, um nur einmal pro Tastendruck zu agieren
                 elif not keyboard.is_pressed(key):
-                    key_states[key] = False
+                    last_key_state[key] = False
         time.sleep(0.001)
 
 def switch_keyboard(option):
@@ -2032,17 +2032,12 @@ def switch_keyboard(option):
     global watching_enabled
     if len(option) == 3 and option[1] in ('>', '-'):
         if option[1] == '>':
-            if option[0] in key_mapping:
-                key_mapping[option[0]].append(option[2])  # Füge eine weitere Zuordnung hinzu
-            else:
-                key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
+            key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
         elif option[1] == '-':
             key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
             key_mapping[option[2]] = [option[0]]  # Füge das umgekehrte Mapping hinzu
         watching_enabled = True  # Aktiviere die Tastaturüberwachung
         print(f"Tastaturüberwachung aktualisiert: {option}")
-    else:
-        print("Bitte gib ein gültiges Format ein, z.B. '>switchkb a>b' oder '>switchkb a-b'.")
 
 # Starte den Tastaturüberwachungsprozess
 watching_thread = threading.Thread(target=watch_keyboard)
@@ -2069,12 +2064,12 @@ async def checkkb(ctx):
         message = "Momentan sind keine Tasten vertauscht."
     await ctx.send(message)
 
-@bot.command(help="remove a specific switched key (USAGE: >removekb a-b (remove ato b and b to a), >removekb a>b(remove a to b))")
+@bot.command(help="remove a specific switched key (USAGE: >removekb a-b (remove a to b and b to a), >removekb a>b(remove a to b))")
 async def removekb(ctx, key: str):
     global key_mapping
     if key in key_mapping:
         del key_mapping[key]
-        reverse_mapping = {value: key for key, value in key_mapping.items()}  # Erstelle ein umgekehrtes Mapping
+        reverse_mapping = {value[0]: key for key, value in key_mapping.items()}  # Erstelle ein umgekehrtes Mapping
         if key in reverse_mapping:
             del key_mapping[reverse_mapping[key]]  # Lösche das umgekehrte Mapping, falls vorhanden
         await ctx.send(f"Tastaturzuordnung für Taste '{key}' wurde entfernt.")
@@ -2099,11 +2094,48 @@ async def resetkb(ctx):
 @bot.command(help="Reset and assign random keys to each letter of the alphabet")
 async def randomkb(ctx):
     await resetkb(ctx)  # Alle vorherigen Tastenzuordnungen zurücksetzen
-    all_keys = list("abcdefghijklmnopqrstuvwxyz") * 2  # Verdoppeln Sie die Tasten, um sowohl linke als auch rechte Tasten zu haben
-    random.shuffle(all_keys)  # Die Tasten zufällig mischen
-    for i in range(0, len(all_keys), 2):  # Iterieren Sie über jedes Paar von Tasten
-        key_mapping[all_keys[i]] = all_keys[i + 1]  # Ordnen Sie die linke Taste der rechten Taste zu
-        key_mapping[all_keys[i + 1]] = all_keys[i]  # Ordnen Sie die rechte Taste der linken Taste zu
+    alphabet = list("abcdefghijklmnopqrstuvwxyz")  # Originale Alphabetliste
+    shuffled_alphabet = alphabet.copy()  # Erstellen einer Kopie des Alphabets
+    random.shuffle(shuffled_alphabet)  # Das kopierte Alphabet zufällig mischen
+
+    new_key_mapping = {}
+    for original, shuffled in zip(alphabet, shuffled_alphabet):
+        new_key_mapping[original] = [shuffled]  # Mapping vom originalen zum zufälligen Buchstaben
+
+    global key_mapping
+    key_mapping = new_key_mapping  # Atomarer Austausch des Mappings
+
     await ctx.send("Alle Tasten wurden zufällig zugewiesen.")
+
+######
+
+del_on_ctrl_enabled = False
+
+def send_a_with_backspace():
+    keyboard.send("a")
+    time.sleep(0.001)  # Kurze Verzögerung, um sicherzustellen, dass das "a" gesendet wurde, bevor der Backspace gesendet wird
+    keyboard.send("\b")
+
+def delonstrg():
+    global del_on_ctrl_enabled
+    while True:
+        if del_on_ctrl_enabled and keyboard.is_pressed("ctrl"):
+            send_a_with_backspace()
+        time.sleep(0.001)
+
+# Starte den Thread für die Funktion delonstrg
+delonstrg_thread = threading.Thread(target=delonstrg)
+delonstrg_thread.daemon = True
+delonstrg_thread.start()
+
+# Befehl zum Ein- und Ausschalten der Funktion delonstrg
+@bot.command(help="Toggle sending 'a' with backspace when pressing Ctrl")
+async def delonstrg(ctx):
+    global del_on_ctrl_enabled
+    del_on_ctrl_enabled = not del_on_ctrl_enabled
+    status = "enabled" if del_on_ctrl_enabled else "disabled"
+    await ctx.send(f"Sending 'a' with backspace when pressing Ctrl is now {status}.")
+
+######
 
 bot.run(TOKEN)

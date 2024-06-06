@@ -128,6 +128,7 @@ async def send_embed(ctx, message):
 
 @bot.event
 async def on_ready():
+    bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
     global notification_sent
     global clipboard_channel
 

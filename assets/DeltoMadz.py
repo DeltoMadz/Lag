@@ -44,7 +44,6 @@ ASCII = """
 
 """
 print(ASCII)
-time.sleep(1.5)
 
 DEV = "tilov"
 

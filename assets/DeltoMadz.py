@@ -45,7 +45,7 @@ ASCII = """
 """
 print(ASCII)
 
-DEV = "MP"
+DEV = "mp"
 
 if not os.getlogin() == DEV:
     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())

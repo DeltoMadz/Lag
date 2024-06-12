@@ -15,3 +15,4 @@ gtts
 Pillow
 colorama
 pymsgbox
+win32com

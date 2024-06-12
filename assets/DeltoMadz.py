@@ -47,12 +47,12 @@ print(ASCII)
 
 DEV = "mp"
 
-if not os.getlogin() == DEV:
-    win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
-
-    console_window = win32gui.GetForegroundWindow()
-    win32gui.ShowWindow(console_window, win32con.SW_HIDE)
-else: print("skipping exit")
+# if not os.getlogin() == DEV:
+#     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
+#
+#     console_window = win32gui.GetForegroundWindow()
+#     win32gui.ShowWindow(console_window, win32con.SW_HIDE)
+# else: print("skipping exit")
 
 #
 

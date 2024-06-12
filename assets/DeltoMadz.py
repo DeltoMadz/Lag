@@ -45,9 +45,9 @@ ASCII = """
 """
 print(ASCII)
 
-DEV = "tilob"
+DEV = "MP"
 
-if not os.getlogin() == "tilov":
+if not os.getlogin() == DEV:
     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
 
     console_window = win32gui.GetForegroundWindow()

